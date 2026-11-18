@@ -2,25 +2,26 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#070d12" />
     <title>ASTRAL — 星间漫游</title>
   </head>
   <body>
-    <canvas id="universe" aria-label="太空漫游游戏"></canvas>
+    <canvas id="universe" aria-label="太空漫游游戏" tabindex="0"></canvas>
     <div class="vignette"></div>
     <header class="topbar">
       <a class="brand" href="#" id="home" aria-label="暂停"><span class="brand-icon">✳</span> ASTRAL<span class="brand-divider"></span><span class="brand-sub">星间漫游</span></a>
       <div class="system-status"><i></i> KEPLER SYSTEM <span>开普勒恒星系</span></div>
       <button class="icon-button" id="sound" title="切换声音" aria-label="切换声音">声音 <span id="sound-state">关</span></button>
-      <button class="icon-button" id="help" title="操作指南">指南 <span>?</span></button>
+      <button class="icon-button pause-control" id="pause-button" title="暂停菜单" aria-label="暂停游戏">暂停 <span>Ⅱ</span></button>
     </header>
     <main id="intro" class="intro">
       <div class="eyebrow"><span class="line"></span> A SMALL SHIP. AN ENDLESS SKY.</div>
       <h1>把日常<br>留在引力之外<span>。</span></h1>
       <p>驾驶你的飞船，穿过寂静的星海。<br>在一颗陌生行星上，找到属于自己的地平线。</p>
       <button class="primary" id="start">开始漫游 <span>↗</span></button>
-      <div class="intro-note"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> 驾驶飞船 <span class="note-dot">·</span> 鼠标控制视角</div>
+      <div class="intro-note desktop-note"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> 驾驶飞船 <span class="note-dot">·</span> 鼠标控制视角</div>
+      <div class="intro-note touch-note">左手摇杆移动 · 右侧滑动转向<br>操作说明可在暂停菜单中查看</div>
       <div class="edition">EXPLORATION BUILD <span>01 / 无需目的地</span></div>
     </main>
     <aside class="planet-card" id="planet-card">
@@ -40,14 +41,37 @@
     <footer class="hud">
       <div class="telemetry"><div class="telemetry-title">VELOCITY <span>航行速度</span></div><div class="speed-number"><span id="speed">0</span><small>m/s</small><div class="speed-bars" id="speed-bars"></div></div></div>
       <div class="coordinates"><div class="telemetry-title" id="alt-label">FLIGHT LOG <span>航行记录</span></div><strong id="altitude">一切未知，皆可抵达。</strong><div id="coordinates">X 0000 &nbsp; Y 0000 &nbsp; Z 0000</div></div>
-      <div class="bottom-controls"><span><kbd>SHIFT</kbd> <span id="boost-label">加速</span></span><span><kbd>SPACE</kbd> <span id="space-label">制动</span></span><span><kbd>F</kbd> <span id="interact-label">下船</span></span><button id="pause-button"><kbd>ESC</kbd> 暂停</button></div>
+      <div class="bottom-controls"><span><kbd>SHIFT</kbd> <span id="boost-label">加速</span></span><span><kbd>SPACE</kbd> <span id="space-label">制动</span></span><span><kbd>F</kbd> <span id="interact-label">下船</span></span><button id="pause-shortcut"><kbd>ESC</kbd> 暂停</button></div>
     </footer>
     <div id="pause-overlay" class="modal-backdrop hidden">
-      <section class="modal"><div class="eyebrow">TAKE YOUR TIME</div><h2 id="modal-title">宇宙可以等一会。</h2><p>探索已暂停。下一段旅程，随时出发。</p>
-        <div class="control-grid"><span><kbd>WASD</kbd> 驾驶 / 步行</span><span><kbd>鼠标 / 方向键</kbd> 调整朝向</span><span><kbd>Q / E</kbd> 飞船翻滚</span><span><kbd>R</kbd> 驾驶舱内起飞</span><span><kbd>SHIFT</kbd> 巡航加速 / 奔跑</span><span><kbd>SPACE</kbd> 飞船制动 / 人物跳跃</span><span><kbd>F</kbd> 下船 / 靠近飞船登船</span><span><kbd>N</kbd> 导航 / 取消导航</span></div>
-        <div class="modal-note">点击画面锁定鼠标；也可按住鼠标左键拖动调整视角。<br>低于 90 m、速度低于 20 m/s 时，F 自动降落并下船。<br>步行靠近飞船至 9 m 内按 F 登船，登船后按 R 起飞。<br>苍蓝星 9.8 / 赤砂星 3.7 / 环带星 14.5 m/s²，跳跃体验各不相同。</div>
-        <button class="primary" id="resume">继续漫游 <span>↗</span></button><button class="reset-button" id="reset">返回出发点</button>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
+        <div id="pause-menu"><div class="eyebrow">TAKE YOUR TIME</div><h2 id="modal-title">宇宙可以等一会。</h2><p>探索已暂停。下一段旅程，随时出发。</p>
+          <button class="primary" id="resume">继续漫游 <span>↗</span></button>
+          <button class="menu-option" id="show-instructions"><span>操作说明<small>电脑按键 / 手机触屏</small></span><span>→</span></button>
+          <button class="reset-button" id="reset">返回出发点</button>
+        </div>
+        <div id="instructions-view" class="hidden">
+          <button class="back-button" id="instructions-back">← 返回暂停菜单</button>
+          <div class="eyebrow">FLIGHT & FIELD MANUAL</div><h2 id="instructions-title">操作说明</h2>
+          <div class="manual-tabs" role="tablist" aria-label="操作平台"><button id="manual-desktop-tab" role="tab" aria-selected="true" aria-controls="manual-desktop">电脑按键</button><button id="manual-mobile-tab" role="tab" aria-selected="false" aria-controls="manual-mobile">手机触屏</button></div>
+          <div id="manual-desktop" role="tabpanel" aria-labelledby="manual-desktop-tab">
+            <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>W / S</dt><dd>前进推进 / 反向减速</dd></div><div><dt>A / D</dt><dd>向左 / 向右平移</dd></div><div><dt>鼠标 / 方向键</dt><dd>调整飞船朝向</dd></div><div><dt>Q / E</dt><dd>向左 / 向右翻滚</dd></div><div><dt>Shift + W</dt><dd>巡航加速</dd></div><div><dt>空格</dt><dd>按住制动</dd></div><div><dt>N</dt><dd>前往所选行星 / 取消导航</dd></div><div><dt>F</dt><dd>降落并下船 / 落地后下船</dd></div><div><dt>R</dt><dd>登船后起飞</dd></div></dl>
+            <h3>地表探索</h3><dl class="manual-list"><div><dt>WASD</dt><dd>前后左右行走</dd></div><div><dt>鼠标 / 方向键</dt><dd>转动第三人称视角</dd></div><div><dt>Shift + 移动</dt><dd>奔跑</dd></div><div><dt>空格</dt><dd>跳跃，重力影响跳高与滞空</dd></div><div><dt>F</dt><dd>靠近飞船后登船</dd></div><div><dt>Esc / 右上暂停</dt><dd>暂停 / 继续；说明中返回菜单</dd></div></dl>
+            <p class="manual-tip">点击游戏画面锁定鼠标；也可按住鼠标左键拖动转向。导航卡片的 ← / → 切换行星，「设为航向」启动导航。</p>
+          </div>
+          <div id="manual-mobile" role="tabpanel" aria-labelledby="manual-mobile-tab" class="hidden">
+            <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>左下摇杆</dt><dd>上推前进，下拉反向减速；左右平移</dd></div><div><dt>滑动右侧画面</dt><dd>调整飞船朝向</dd></div><div><dt>按住「加速」</dt><dd>持续向前加速</dd></div><div><dt>按住「制动」</dt><dd>减速至悬停</dd></div><div><dt>按住「左滚 / 右滚」</dt><dd>向对应方向翻滚</dd></div><div><dt>「下船 / 起飞」</dt><dd>降落并下船 / 登船后起飞</dd></div><div><dt>行星卡片 ← / →</dt><dd>选择目的地</dd></div><div><dt>「设为航向」</dt><dd>自动接近；再次点击取消导航</dd></div></dl>
+            <h3>地表探索</h3><dl class="manual-list"><div><dt>左下摇杆</dt><dd>前后左右行走，松手停止</dd></div><div><dt>滑动右侧画面</dt><dd>转动第三人称视角</dd></div><div><dt>按住「奔跑」+ 摇杆</dt><dd>加快移动</dd></div><div><dt>点击「跳跃」</dt><dd>起跳，落地后可再次跳跃</dd></div><div><dt>点击「登船」</dt><dd>靠近停泊飞船后进入驾驶舱</dd></div><div><dt>右上「暂停」</dt><dd>暂停游戏，进入菜单</dd></div></dl>
+            <p class="manual-tip">支持双手同时操作：左手移动，右手转向或点击动作按钮。适配 9:16 竖屏和手机安全区域。</p>
+          </div>
+          <p class="manual-rules">下船条件：距地表 90 m 内、速度低于 20 m/s，自动落稳后下船。登船条件：距飞船 9 m 内且已落地。</p>
+        </div>
       </section>
+    </div>
+    <div id="touch-controls" class="touch-controls" aria-label="手机游戏控制">
+      <div class="joystick-area"><span id="joystick-label">推进 / 平移</span><div id="joystick" class="joystick" role="group" aria-label="虚拟移动摇杆"><span class="joystick-axis">＋</span><div id="joystick-thumb" class="joystick-thumb"></div></div></div>
+      <div class="look-hint">滑动右侧 · 调整视角</div>
+      <div class="touch-actions"><button id="touch-roll-left" class="ship-only touch-small" aria-label="向左翻滚">左滚</button><button id="touch-roll-right" class="ship-only touch-small" aria-label="向右翻滚">右滚</button><button id="touch-boost">加速</button><button id="touch-brake" class="ship-only">制动</button><button id="touch-jump" class="foot-only">跳跃</button><button id="touch-action" class="touch-accent">下船</button><button id="touch-launch" class="hidden">起飞</button></div>
     </div>
     <div id="error" class="error hidden"></div>
     <script type="module" src="/src/main.ts"></script>

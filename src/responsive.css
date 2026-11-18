@@ -1,0 +1,649 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  overscroll-behavior: none;
+}
+#universe {
+  touch-action: none;
+}
+button {
+  touch-action: manipulation;
+}
+.pause-control {
+  min-height: 44px;
+  min-width: 64px;
+  justify-content: center;
+}
+.pause-control span {
+  font-size: 14px;
+  color: var(--mint);
+}
+.modal-backdrop {
+  padding: max(20px, env(safe-area-inset-top)) 16px
+    max(20px, env(safe-area-inset-bottom));
+  overflow: auto;
+}
+.modal {
+  max-height: calc(
+    100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+  );
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #77998a55 transparent;
+}
+.menu-option {
+  width: 100%;
+  background: #a5c6b208;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 17px 20px;
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+.menu-option small {
+  display: block;
+  font-size: 9px;
+  color: #86a29b;
+  margin-top: 7px;
+}
+.menu-option:hover {
+  background: #a5c6b212;
+}
+.back-button {
+  background: none;
+  color: #a6c5b7;
+  font-size: 11px;
+  padding: 8px 0;
+  margin: 0 0 25px;
+  min-height: 40px;
+}
+.manual-tabs {
+  display: flex;
+  gap: 6px;
+  background: #050f1455;
+  border: 1px solid var(--line);
+  padding: 4px;
+  border-radius: 5px;
+  margin: 22px 0;
+}
+.manual-tabs button {
+  flex: 1;
+  padding: 12px 8px;
+  border-radius: 3px;
+  background: transparent;
+  color: #819d95;
+  font-size: 11px;
+}
+.manual-tabs button[aria-selected="true"] {
+  color: #142a26;
+  background: var(--mint);
+}
+.modal h3 {
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-weight: 500;
+  margin: 25px 0 12px;
+  color: #d8e7dd;
+}
+.manual-list {
+  margin: 0;
+  font-size: 11px;
+}
+.manual-list > div {
+  display: grid;
+  grid-template-columns: 115px 1fr;
+  gap: 16px;
+  border-bottom: 1px solid #a6c3b512;
+  padding: 11px 0;
+  line-height: 1.8;
+}
+.manual-list dt {
+  color: #bdd7c9;
+}
+.manual-list dd {
+  margin: 0;
+  color: #8fa99e;
+}
+.modal .manual-tip,
+.modal .manual-rules {
+  font-size: 10px;
+  line-height: 1.95;
+  color: #8da69b;
+  margin: 20px 0 0;
+}
+.modal .manual-rules {
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.touch-controls,
+.touch-note {
+  display: none;
+}
+.is-paused .landing-prompt,
+.is-paused .takeoff-prompt {
+  visibility: hidden;
+}
+.touch-layout {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.touch-layout .topbar {
+  top: env(safe-area-inset-top);
+  height: 64px;
+  left: env(safe-area-inset-left);
+  right: env(safe-area-inset-right);
+  padding: 0 20px;
+  gap: 12px;
+}
+.touch-layout .brand {
+  font-size: 15px;
+  letter-spacing: 3px;
+  gap: 8px;
+}
+.touch-layout .brand-icon {
+  font-size: 29px;
+}
+.touch-layout .brand-divider,
+.touch-layout .brand-sub,
+.touch-layout .system-status {
+  display: none;
+}
+.touch-layout #sound {
+  margin-left: auto;
+  min-height: 44px;
+}
+.touch-layout .pause-control {
+  padding: 0 8px;
+  min-width: 68px;
+  border: 1px solid #b3d4c62b;
+  border-radius: 5px;
+  background: #0a171d66;
+  backdrop-filter: blur(8px);
+  font-size: 11px;
+}
+.touch-layout .touch-note {
+  display: block;
+  line-height: 1.9;
+  font-size: 9px;
+  color: #9eb4ad;
+}
+.touch-layout .desktop-note {
+  display: none;
+}
+.touch-layout .intro {
+  left: 24px;
+  top: max(100px, 17dvh);
+  width: calc(100% - 48px);
+}
+.touch-layout .intro .eyebrow {
+  font-size: 7px;
+  letter-spacing: 1.7px;
+}
+.touch-layout .intro h1 {
+  font-size: clamp(29px, 8.3vw, 42px);
+  letter-spacing: 2px;
+  margin: 18px 0 12px;
+  line-height: 1.4;
+}
+.touch-layout .intro p {
+  font-size: 10px;
+  line-height: 1.9;
+  letter-spacing: 0.6px;
+}
+.touch-layout .intro .primary {
+  margin-top: 20px;
+  min-height: 48px;
+  padding: 12px 20px;
+}
+.touch-layout .intro-note {
+  margin-top: 13px;
+}
+.touch-layout .edition {
+  display: none;
+}
+.touch-layout .planet-card {
+  z-index: 6;
+  right: 20px;
+  left: 20px;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  width: auto;
+  padding: 14px 16px 8px;
+}
+.touch-layout .planet-card .eyebrow {
+  font-size: 7px;
+}
+.touch-layout .planet-heading {
+  margin-top: 9px;
+}
+.touch-layout .planet-heading h2 {
+  font-size: 20px;
+}
+.touch-layout .planet-card p {
+  display: none;
+}
+.touch-layout .planet-data {
+  margin-top: 12px;
+}
+.touch-layout .planet-data label {
+  font-size: 8px;
+  margin-bottom: 5px;
+}
+.touch-layout .planet-data strong {
+  font-size: 10px;
+}
+.touch-layout .planet-actions {
+  margin-top: 12px;
+  padding-top: 3px;
+  gap: 8px;
+}
+.touch-layout .planet-actions button {
+  min-height: 40px;
+}
+.touch-layout .planet-actions .target-cycle {
+  min-width: 40px;
+}
+.touch-layout .planet-actions .approach {
+  font-size: 11px;
+}
+.touch-layout.active-flight .planet-card {
+  left: auto;
+  right: 16px;
+  top: calc(76px + env(safe-area-inset-top));
+  bottom: auto;
+  width: 205px;
+  padding: 11px 13px 4px;
+}
+.touch-layout.active-flight .planet-card .eyebrow {
+  display: none;
+}
+.touch-layout.active-flight .planet-heading {
+  margin-top: 0;
+  gap: 8px;
+}
+.touch-layout.active-flight .planet-heading h2 {
+  font-size: 17px;
+}
+.touch-layout.active-flight .planet-code {
+  font-size: 7px;
+  letter-spacing: 0.4px;
+}
+.touch-layout.active-flight .planet-data {
+  margin-top: 9px;
+  gap: 6px;
+}
+.touch-layout.active-flight .planet-actions {
+  margin-top: 10px;
+}
+.touch-layout .hud {
+  height: 64px;
+  left: 20px;
+  right: 20px;
+  bottom: env(safe-area-inset-bottom);
+  gap: 18px;
+}
+.touch-layout .telemetry {
+  min-width: 100px;
+}
+.touch-layout .telemetry-title {
+  font-size: 7px;
+}
+.touch-layout .telemetry-title span {
+  font-size: 7px;
+  margin-left: 6px;
+}
+.touch-layout .speed-number {
+  margin-top: 3px;
+}
+.touch-layout .speed-number > span {
+  font-size: 25px;
+}
+.touch-layout .speed-number small {
+  font-size: 9px;
+}
+.touch-layout .speed-bars {
+  gap: 2px;
+  margin-left: 4px;
+}
+.touch-layout .speed-bars b {
+  width: 2px;
+  height: 12px;
+}
+.touch-layout .bottom-controls {
+  display: none;
+}
+.touch-layout .coordinates {
+  display: block;
+  max-width: none;
+  margin-left: auto;
+  text-align: right;
+}
+.touch-layout .coordinates > div:last-child {
+  display: none;
+}
+.touch-layout .coordinates strong {
+  font-size: 10px;
+  margin-top: 6px;
+  letter-spacing: 0.3px;
+}
+.touch-layout .flight-label {
+  left: 20px;
+  bottom: calc(77px + env(safe-area-inset-bottom));
+  font-size: 9px;
+}
+.touch-layout .flight-sector {
+  display: none;
+}
+.touch-layout .reticle {
+  top: 43%;
+  transform: translate(-50%, -50%) scale(0.75);
+}
+.touch-layout .landing-prompt,
+.touch-layout .takeoff-prompt {
+  display: none !important;
+}
+.touch-layout .touch-controls {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.touch-layout.active-flight:not(.is-paused) .touch-controls {
+  display: block;
+}
+.joystick-area {
+  position: absolute;
+  left: max(18px, env(safe-area-inset-left));
+  bottom: calc(101px + env(safe-area-inset-bottom));
+  pointer-events: auto;
+  text-align: center;
+}
+.joystick-area > span {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: #a4c1b3;
+  margin-bottom: 13px;
+  text-shadow: 0 1px 7px #000;
+}
+.joystick {
+  position: relative;
+  width: 118px;
+  height: 118px;
+  border: 1px solid #b8e6ce33;
+  border-radius: 50%;
+  background: radial-gradient(circle, #b8e6ce08, #0b1c2677);
+  touch-action: none;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 15px #c3e9d405;
+}
+.joystick-axis {
+  position: absolute;
+  color: #a6d2bd33;
+  font-size: 35px;
+  font-weight: 300;
+}
+.joystick-thumb {
+  width: 46px;
+  height: 46px;
+  background: linear-gradient(135deg, #c3e9d444, #b8e6ce17);
+  border: 1px solid #bfebd67a;
+  border-radius: 50%;
+  box-shadow: 0 4px 14px #04121555;
+  pointer-events: none;
+}
+.look-hint {
+  position: absolute;
+  right: 23px;
+  bottom: calc(298px + env(safe-area-inset-bottom));
+  color: #91b2a344;
+  font-size: 8px;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+.touch-actions {
+  position: absolute;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: calc(101px + env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(2, 52px);
+  gap: 9px;
+  pointer-events: auto;
+}
+.touch-actions button {
+  width: 52px;
+  min-height: 47px;
+  border-radius: 8px;
+  border: 1px solid #b8e6ce30;
+  background: #0b202ad1;
+  color: #c3d9cf;
+  font-size: 11px;
+  backdrop-filter: blur(10px);
+  touch-action: none;
+}
+.touch-actions button:active,
+.touch-actions button.pressed {
+  border-color: #b8e6ceaa;
+  background: #b8e6ce33;
+}
+.touch-actions .touch-small {
+  min-height: 35px;
+  font-size: 10px;
+}
+.touch-actions button:disabled {
+  opacity: 0.35;
+}
+.touch-actions .touch-accent {
+  border-color: #b8e6ce66;
+  color: var(--mint);
+}
+.touch-actions .foot-only {
+  display: none;
+}
+.on-foot .touch-actions .ship-only {
+  display: none;
+}
+.on-foot .touch-actions .foot-only {
+  display: block;
+}
+.touch-layout .surface-info {
+  top: calc(90px + env(safe-area-inset-top));
+  left: 20px;
+}
+.touch-layout .surface-info h2 {
+  font-size: 23px;
+  margin-top: 11px;
+}
+.touch-layout .surface-info p {
+  margin-bottom: 16px;
+  font-size: 9px;
+}
+.touch-layout .surface-gravity {
+  font-size: 9px;
+}
+.touch-layout .surface-info small {
+  display: none;
+}
+.touch-layout .notice {
+  top: calc(72px + env(safe-area-inset-top));
+  max-width: calc(100vw - 40px);
+  font-size: 10px;
+  line-height: 1.8;
+  white-space: normal;
+  text-align: center;
+  z-index: 9;
+}
+.touch-layout .modal {
+  padding: 24px;
+  max-width: 100%;
+  width: 460px;
+}
+.touch-layout .modal h2 {
+  font-size: 25px;
+  letter-spacing: 1px;
+}
+.touch-layout .modal .primary {
+  min-height: 48px;
+}
+.touch-layout .reset-button {
+  min-height: 44px;
+  margin-top: 14px;
+}
+.touch-layout .back-button {
+  margin-bottom: 15px;
+}
+.touch-layout .manual-list > div {
+  grid-template-columns: 100px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+}
+.touch-layout .manual-list {
+  font-size: 10px;
+}
+.touch-layout .modal h3 {
+  margin-top: 20px;
+}
+.touch-layout .manual-tabs {
+  position: sticky;
+  top: -24px;
+  z-index: 1;
+  background: #12232bf5;
+}
+.touch-layout .modal-backdrop {
+  backdrop-filter: blur(15px);
+}
+@media (max-width: 700px) and (max-height: 700px) {
+  .touch-layout .intro {
+    top: 85px;
+  }
+  .touch-layout .intro h1 {
+    font-size: 30px;
+    margin: 13px 0 10px;
+  }
+  .touch-layout .intro .primary {
+    margin-top: 14px;
+  }
+  .touch-layout .intro p {
+    font-size: 9px;
+  }
+  .touch-layout .intro-note {
+    font-size: 8px;
+    margin-top: 9px;
+  }
+  .touch-layout:not(.active-flight) .planet-card .planet-data {
+    display: none;
+  }
+  .touch-layout:not(.active-flight) .planet-card {
+    bottom: 84px;
+    padding-top: 12px;
+  }
+  .touch-layout:not(.active-flight) .planet-card .eyebrow {
+    display: none;
+  }
+  .touch-layout:not(.active-flight) .planet-card .planet-heading {
+    margin-top: 0;
+  }
+  .touch-layout:not(.active-flight) .planet-card .planet-actions {
+    margin-top: 8px;
+  }
+  .joystick {
+    width: 108px;
+    height: 108px;
+  }
+  .touch-layout .touch-actions {
+    grid-template-columns: repeat(2, 48px);
+    gap: 7px;
+  }
+  .touch-layout .touch-actions button {
+    width: 48px;
+    min-height: 43px;
+  }
+  .touch-layout .touch-actions .touch-small {
+    min-height: 33px;
+  }
+}
+@media (pointer: coarse) and (orientation: landscape) {
+  .touch-layout .intro {
+    top: 80px;
+    left: 30px;
+    width: 45%;
+  }
+  .touch-layout .intro h1 {
+    font-size: 27px;
+  }
+  .touch-layout:not(.active-flight) .planet-card {
+    left: auto;
+    right: 25px;
+    width: 250px;
+    bottom: 85px;
+  }
+  .touch-layout .joystick-area,
+  .touch-layout .touch-actions {
+    bottom: 80px;
+  }
+  .touch-layout .hud {
+    height: 55px;
+  }
+  .touch-layout .flight-label {
+    bottom: 64px;
+  }
+  .touch-layout .surface-info {
+    top: 75px;
+  }
+  .touch-layout .surface-info p {
+    display: none;
+  }
+  .touch-layout.active-flight .planet-card {
+    top: 70px;
+  }
+  .touch-layout .look-hint {
+    display: none;
+  }
+}
+.modal-backdrop {
+  grid-template-columns: minmax(0, 1fr);
+}
+.modal {
+  min-width: 0;
+  justify-self: center;
+}
+.touch-layout .modal {
+  width: min(460px, 100%);
+}
+.manual-list dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.touch-layout:not(.active-flight) .flight-label {
+  display: none;
+}
+
+#universe:focus {
+  outline: none;
+}
+.touch-layout .brand,
+.touch-layout .pause-control {
+  flex-shrink: 0;
+}
+.touch-layout .icon-button {
+  white-space: nowrap;
+}
+.touch-layout .notice {
+  top: calc(244px + env(safe-area-inset-top));
+}
+.touch-layout .planet-actions .target-cycle {
+  min-width: 44px;
+}
+.touch-layout .touch-actions .touch-small {
+  min-height: 40px;
+}

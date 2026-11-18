@@ -1,22 +1,27 @@
 import * as T from 'three';
 import { createPlanet, nearest, planets, groundRadius, surfaceRadius } from './world';
 import { Expedition, createAstronaut } from './exploration';
+import { MobileControls } from './mobile';
 import './style.css';
 import './surface.css';
+import './responsive.css';
 
 const $=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
 const canvas=$<HTMLCanvasElement>('universe');
+const touchLayout=()=>matchMedia('(pointer: coarse), (max-width: 700px)').matches;
+document.body.classList.toggle('touch-layout',touchLayout());
+const keyboardKeys=new Set<string>();
 let renderer:T.WebGLRenderer;
 try{renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}
 catch{ $('error').textContent='当前浏览器无法启动 WebGL。请使用支持硬件加速的桌面浏览器打开。';$('error').classList.remove('hidden');throw new Error('WebGL unavailable');}
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));
+renderer.setPixelRatio(Math.min(devicePixelRatio,touchLayout()?1.5:1.8));
 renderer.setSize(innerWidth,innerHeight);
 renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.35;
 const scene=new T.Scene();scene.background=new T.Color(0x050b13);
 const camera=new T.PerspectiveCamera(53,innerWidth/innerHeight,.15,18000);
 const expedition=new Expedition();
 const flight=expedition.flight;
-let active=false,paused=false,selected=0,drag=false,uiTime=0,noticeTimer=0;
+let active=false,paused=false,selected=0,drag=false,uiTime=0,noticeTimer=0,lastOnFoot=false;
 let clockTime=0,last=performance.now();
 const labels={manual:'自由巡航',navigation:'自动导航',landing:'辅助降落',landed:'已着陆',takeoff:'起飞中'};
 function notify(message:string){$('notice').textContent=message;$('notice').classList.add('visible');clearTimeout(noticeTimer);noticeTimer=window.setTimeout(()=>$('notice').classList.remove('visible'),4200);}
@@ -106,52 +111,77 @@ function initAudio(){
 }
 $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.resume();$('sound-state').textContent=soundEnabled?'开':'关';$('sound').setAttribute('aria-pressed',String(soundEnabled));}catch{notify('此浏览器暂不支持音频');}};
 
-function release(){drag=false;flight.keys.clear();flight.mouseX=0;flight.mouseY=0;if(document.pointerLockElement)document.exitPointerLock();}
-function pause(){if(!active){$('pause-overlay').classList.remove('hidden');paused=true;return;}paused=true;release();$('pause-overlay').classList.remove('hidden');}
-function lock(){try{const result=canvas.requestPointerLock();if(result)void result.catch(()=>{});}catch{/* Drag and keyboard controls remain available. */}}
-function start(){active=true;paused=false;document.body.classList.add('active-flight');$('intro').classList.add('departed');$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');lock();notify('W 推进 · 鼠标转向 · 空格制动 · N 自动前往目标');}
+const mobile=new MobileControls({enabled:()=>active&&!paused,onFoot:()=>expedition.onFoot,look:(x,y)=>{flight.mouseX+=x;flight.mouseY+=y;},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
+function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;if(document.pointerLockElement)document.exitPointerLock();}
+function menuView(){
+  $('pause-menu').classList.remove('hidden');$('instructions-view').classList.add('hidden');
+  document.querySelector('.modal')?.setAttribute('aria-labelledby','modal-title');
+}
+function pause(){paused=true;release();menuView();document.body.classList.add('is-paused');$('pause-overlay').classList.remove('hidden');$('resume').focus();}
+function lock(){if(touchLayout())return;try{const result=canvas.requestPointerLock();if(result)void result.catch(()=>{});}catch{/* Drag and keyboard controls remain available. */}}
+function resume(){paused=false;document.body.classList.remove('is-paused');$('pause-overlay').classList.add('hidden');if(active){canvas.focus();lock();}else $('start').focus();}
+function showManual(platform:'desktop'|'mobile'){
+  const isMobile=platform==='mobile';
+  $('manual-desktop').classList.toggle('hidden',isMobile);$('manual-mobile').classList.toggle('hidden',!isMobile);
+  $('manual-desktop-tab').setAttribute('aria-selected',String(!isMobile));$('manual-mobile-tab').setAttribute('aria-selected',String(isMobile));
+}
+function start(){active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('intro').classList.add('departed');$('intro').inert=true;$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');lock();notify(touchLayout()?'左下摇杆移动 · 滑动右侧转向 · 右上角暂停':'W 推进 · 鼠标转向 · 空格制动 · N 自动前往目标');}
 $('start').onclick=start;
-$('resume').onclick=()=>{paused=false;$('pause-overlay').classList.add('hidden');if(active)lock();};
-$('pause-button').onclick=pause;$('help').onclick=pause;
+$('resume').onclick=resume;
+$('pause-button').onclick=pause;$('pause-shortcut').onclick=pause;
+$('show-instructions').onclick=()=>{
+  $('pause-menu').classList.add('hidden');$('instructions-view').classList.remove('hidden');
+  document.querySelector('.modal')?.setAttribute('aria-labelledby','instructions-title');
+  showManual(touchLayout()?'mobile':'desktop');$('instructions-back').focus();
+};
+$('instructions-back').onclick=()=>{menuView();$('show-instructions').focus();};
+$('manual-desktop-tab').onclick=()=>showManual('desktop');$('manual-mobile-tab').onclick=()=>showManual('mobile');
 $('home').onclick=e=>{e.preventDefault();pause();};
-$('reset').onclick=()=>{expedition.reset();camera.position.copy(flight.position).add(new T.Vector3(0,7,24));selected=0;updateCard();paused=false;active=false;document.body.classList.remove('active-flight','on-foot');$('intro').classList.remove('departed');$('pause-overlay').classList.add('hidden');$('reticle').classList.add('hidden');release();notify('已返回出发点');};
+$('reset').onclick=()=>{release();expedition.reset();camera.position.copy(flight.position).add(new T.Vector3(0,7,24));selected=0;updateCard();paused=false;active=false;document.body.classList.remove('active-flight','on-foot','is-paused');$('intro').classList.remove('departed');$('intro').inert=false;$('pause-overlay').classList.add('hidden');$('reticle').classList.add('hidden');$('start').focus();notify('已返回出发点');};
 function updateCard(){const p=planets[selected];$('planet-name').textContent=p.name;$('planet-code').textContent=p.code;$('planet-description').textContent=p.description;$('planet-type').textContent=p.type;$('planet-index').textContent=`0${selected+1} / 03`;$('marker-name').textContent=p.name;}
 $('next').onclick=()=>{selected=(selected+1)%planets.length;updateCard();};
 $('previous').onclick=()=>{selected=(selected+planets.length-1)%planets.length;updateCard();};
-function navigate(){if(!active)start();expedition.navigate(planets[selected]);release();}
+function navigate(){if(paused)return;if(!active)start();if(flight.mode==='navigation'){flight.cancel();release();return;}expedition.navigate(planets[selected]);release();}
 $('approach').onclick=navigate;
-canvas.addEventListener('mousedown',()=>{if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
+canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
 addEventListener('mouseup',()=>drag=false);
 addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){flight.mouseX+=T.MathUtils.clamp(e.movementX,-80,80);flight.mouseY+=T.MathUtils.clamp(e.movementY,-80,80);}});
 document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement){drag=false;flight.mouseX=0;flight.mouseY=0;}});
 addEventListener('keydown',e=>{
-  if(['Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();
-  if(e.code==='Escape'){if(paused){paused=false;$('pause-overlay').classList.add('hidden');}else pause();return;}
+  if(paused){
+    if(e.code==='Escape'&&!e.repeat){e.preventDefault();if(!$('instructions-view').classList.contains('hidden')){menuView();$('show-instructions').focus();}else resume();}
+    if(e.code==='Tab'){
+      const visible=Array.from(document.querySelectorAll<HTMLElement>('.modal button')).filter(el=>el.getClientRects().length>0);
+      const first=visible[0],last=visible[visible.length-1];
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
+    }return;
+  }
+  if(['Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)&&active)e.preventDefault();
+  if(e.code==='Escape'&&!e.repeat){pause();return;}
   if(!active||paused||e.repeat)return;
   if(e.code==='KeyF'){expedition.interact();return;}
   if(e.code==='KeyR'){expedition.takeoff();return;}
   if(e.code==='Space'&&expedition.onFoot){expedition.walker.jump();return;}
   if(e.code==='KeyN'){if(flight.mode==='navigation')flight.cancel();else navigate();return;}
-  flight.keys.add(e.code);
+  keyboardKeys.add(e.code);
 });
-addEventListener('keyup',e=>flight.keys.delete(e.code));
+addEventListener('keyup',e=>keyboardKeys.delete(e.code));
 addEventListener('blur',()=>{if(active&&!paused)pause();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&active)pause();});
-// Touch dragging steers; two-finger touch applies thrust. Navigation works without a keyboard.
-let touchX=0,touchY=0;
-canvas.addEventListener('touchstart',e=>{if(!active||paused)return;touchX=e.touches[0].clientX;touchY=e.touches[0].clientY;if(e.touches.length>1)flight.keys.add('KeyW');},{passive:true});
-canvas.addEventListener('touchmove',e=>{if(!active||paused)return;e.preventDefault();flight.mouseX+=(e.touches[0].clientX-touchX)*.5;flight.mouseY+=(e.touches[0].clientY-touchY)*.5;touchX=e.touches[0].clientX;touchY=e.touches[0].clientY;},{passive:false});
-canvas.addEventListener('touchend',()=>flight.keys.delete('KeyW'));
 $('landing-prompt').onclick=()=>expedition.interact();
 $('takeoff-prompt').onclick=()=>expedition.takeoff();
-addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
+addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,touchLayout()?1.5:1.8));camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();document.body.classList.toggle('touch-layout',touchLayout());mobile.reset();});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();pause();notify('图形上下文已丢失，请刷新页面重新进入');});
 
 const cameraPosition=new T.Vector3(),cameraLook=new T.Vector3(),worldUp=new T.Vector3(0,1,0),projection=new T.Vector3();
 camera.position.copy(flight.position).add(new T.Vector3(0,7,24));
 function frame(now:number){
   const dt=Math.min((now-last)/1000,.04);last=now;
-  if(!paused){clockTime+=dt;if(active)expedition.update(dt);}
+  if(!paused){clockTime+=dt;if(active){
+    flight.keys.clear();for(const code of keyboardKeys)flight.keys.add(code);for(const code of mobile.keys)flight.keys.add(code);
+    expedition.update(dt);
+  }}
+  if(lastOnFoot!==expedition.onFoot){keyboardKeys.clear();mobile.reset();flight.keys.clear();lastOnFoot=expedition.onFoot;}
   const onFoot=expedition.onFoot,walker=expedition.walker;
   const actorPosition=onFoot?walker.position:flight.position;
   const actorSpeed=onFoot?walker.speed:flight.speed;
@@ -185,7 +215,8 @@ function frame(now:number){
   // Clamp the interpolated camera too, so entering a hillside never clips through it.
   if(onFoot){const radial=camera.position.clone().sub(walker.body.center);const direction=radial.clone().normalize();const safe=groundRadius(walker.body,direction)+.65;if(radial.length()<safe)camera.position.copy(walker.body.center).addScaledVector(direction,safe);}
   camera.up.copy(worldUp).normalize();camera.lookAt(cameraLook);
-  const fov=onFoot?58:53+(active?Math.min(flight.speed/35,7):0);camera.fov=T.MathUtils.lerp(camera.fov,fov,.04);camera.updateProjectionMatrix();
+  const portrait=touchLayout()&&camera.aspect<1;
+  const fov=onFoot?(portrait?64:58):(portrait?68:53)+(active?Math.min(flight.speed/35,7):0);camera.fov=T.MathUtils.lerp(camera.fov,fov,.04);camera.updateProjectionMatrix();
   stars.position.copy(camera.position);
   mist.color.setHex(local.body.atmosphere);mist.density=near*near*.00085;
   (scene.background as T.Color).set(0x050b13).lerp(new T.Color(local.body.atmosphere).multiplyScalar(.28),near*near*.8);
@@ -220,6 +251,11 @@ function frame(now:number){
     const canLand=active&&(onFoot?expedition.canBoard:(local.altitude<90&&flight.speed<20||flight.mode==='landed'));
     $('landing-prompt').classList.toggle('hidden',!canLand||!onFoot&&(flight.mode==='landing'||flight.mode==='takeoff'));
     $('landing-text').textContent=onFoot?'登上飞船':flight.mode==='landed'?'离开飞船 · 地表探索':'降落并下船';
+    $('touch-boost').textContent=onFoot?'奔跑':'加速';$('joystick-label').textContent=onFoot?'移动':'推进 / 平移';
+    $('touch-action').textContent=onFoot?'登船':'下船';
+    $<HTMLButtonElement>('touch-action').disabled=onFoot?!expedition.canBoard:!canLand||flight.mode==='landing'||flight.mode==='takeoff';
+    $('touch-launch').classList.toggle('hidden',onFoot||flight.mode!=='landed');
+    $('approach').innerHTML=flight.mode==='navigation'?'取消导航 <span>×</span>':'设为航向 <span>↗</span>';
     $('takeoff-prompt').classList.toggle('hidden',!active||onFoot||flight.mode!=='landed');
     projection.copy(onFoot?flight.position:planets[selected].center).project(camera);
     $('marker-name').textContent=onFoot?`飞船 · ${expedition.shipDistance.toFixed(0)} m`:planets[selected].name;
