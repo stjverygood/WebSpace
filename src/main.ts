@@ -2,13 +2,15 @@ import * as T from 'three';
 import { createPlanet, nearest, planets, groundRadius, surfaceRadius } from './world';
 import { Expedition, createAstronaut } from './exploration';
 import { MobileControls } from './mobile';
+import { enterLandscape, needsLandscape } from './display';
 import './style.css';
 import './surface.css';
 import './responsive.css';
+import './landscape.css';
 
 const $=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
 const canvas=$<HTMLCanvasElement>('universe');
-const touchLayout=()=>matchMedia('(pointer: coarse), (max-width: 700px)').matches;
+const touchLayout=()=>matchMedia('(any-pointer: coarse), (max-width: 700px), (max-width: 1024px) and (max-height: 600px)').matches;
 document.body.classList.toggle('touch-layout',touchLayout());
 const keyboardKeys=new Set<string>();
 let renderer:T.WebGLRenderer;
@@ -22,6 +24,8 @@ const camera=new T.PerspectiveCamera(53,innerWidth/innerHeight,.15,18000);
 const expedition=new Expedition();
 const flight=expedition.flight;
 let active=false,paused=false,selected=0,drag=false,uiTime=0,noticeTimer=0,lastOnFoot=false;
+let orientationBlocked=needsLandscape(innerWidth,innerHeight,touchLayout());
+let fullscreenTransition=false;
 let clockTime=0,last=performance.now();
 const labels={manual:'自由巡航',navigation:'自动导航',landing:'辅助降落',landed:'已着陆',takeoff:'起飞中'};
 function notify(message:string){$('notice').textContent=message;$('notice').classList.add('visible');clearTimeout(noticeTimer);noticeTimer=window.setTimeout(()=>$('notice').classList.remove('visible'),4200);}
@@ -111,21 +115,71 @@ function initAudio(){
 }
 $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.resume();$('sound-state').textContent=soundEnabled?'开':'关';$('sound').setAttribute('aria-pressed',String(soundEnabled));}catch{notify('此浏览器暂不支持音频');}};
 
-const mobile=new MobileControls({enabled:()=>active&&!paused,onFoot:()=>expedition.onFoot,look:(x,y)=>{flight.mouseX+=x;flight.mouseY+=y;},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
+const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,look:(x,y)=>{flight.mouseX+=x;flight.mouseY+=y;},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
 function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;if(document.pointerLockElement)document.exitPointerLock();}
+function updateOrientation(){
+  const blocked=needsLandscape(innerWidth,innerHeight,touchLayout());
+  if(blocked&&!orientationBlocked)release();
+  orientationBlocked=blocked;
+  document.body.classList.toggle('needs-rotation',blocked);
+  const overlay=$('rotate-overlay'),visible=blocked&&!paused,wasVisible=!overlay.classList.contains('hidden');
+  overlay.classList.toggle('hidden',!visible);
+  document.querySelectorAll<HTMLElement>('canvas,header,.planet-card,.hud,.surface-info,#touch-controls,#landing-prompt,#takeoff-prompt').forEach(el=>el.inert=visible);
+  $('intro').inert=active||visible;
+  if(visible&&!wasVisible)$('rotate-fullscreen').focus();
+}
+type ExtendedDocument=Document&{webkitFullscreenElement?:Element;webkitExitFullscreen?:()=>Promise<void>|void};
+const fullscreenDocument=document as ExtendedDocument;
+const isFullscreen=()=>Boolean(document.fullscreenElement||fullscreenDocument.webkitFullscreenElement);
+let wasFullscreen=isFullscreen();
+async function fullscreen(showHint=true){
+  if(fullscreenTransition)return;
+  fullscreenTransition=true;
+  try{
+    const root=document.documentElement as HTMLElement&{webkitRequestFullscreen?:()=>Promise<void>|void};
+    const orientation=screen.orientation as ScreenOrientation&{lock?:(value:string)=>Promise<void>};
+    const result=await enterLandscape({
+      isFullscreen,
+      requestFullscreen:root.requestFullscreen?()=>root.requestFullscreen({navigationUI:'hide'}):root.webkitRequestFullscreen?()=>root.webkitRequestFullscreen!():undefined,
+      lockLandscape:touchLayout()&&orientation?.lock?()=>orientation.lock!('landscape'):undefined,
+    });
+    if(showHint){
+      const message=!result.fullscreen?(touchLayout()?'浏览器暂不支持全屏，请开启自动旋转并手动横置手机。':'浏览器暂不支持全屏，可继续在当前窗口游玩。'):touchLayout()&&!result.locked?(orientationBlocked?'已进入全屏，请手动横置手机；若未旋转，请关闭系统方向锁定。':'已进入全屏；浏览器不支持锁定方向，保持横屏即可游玩。'):'已进入全屏';
+      $('rotate-note').textContent=message;
+      if(!orientationBlocked)notify(message);
+    }
+  }finally{fullscreenTransition=false;updateOrientation();}
+}
+$('fullscreen-button').onclick=async()=>{
+  if(isFullscreen()){
+    try{screen.orientation?.unlock?.();}catch{/* Some browsers do not expose orientation control. */}
+    try{if(document.exitFullscreen)await document.exitFullscreen();else await fullscreenDocument.webkitExitFullscreen?.();}catch{notify('请使用浏览器的退出全屏按钮');}
+  }else await fullscreen();
+};
+$('rotate-fullscreen').onclick=()=>void fullscreen();
+$('rotate-menu').onclick=()=>pause();
+function fullscreenChanged(){
+  const current=isFullscreen();
+  $('fullscreen-button').setAttribute('aria-label',current?'退出全屏':'进入全屏');
+  $('fullscreen-button').title=current?'退出全屏':'进入全屏';
+  if(wasFullscreen&&!current&&active&&!paused)pause();
+  wasFullscreen=current;updateOrientation();
+}
+document.addEventListener('fullscreenchange',fullscreenChanged);
+document.addEventListener('webkitfullscreenchange',fullscreenChanged);
 function menuView(){
   $('pause-menu').classList.remove('hidden');$('instructions-view').classList.add('hidden');
   document.querySelector('.modal')?.setAttribute('aria-labelledby','modal-title');
 }
-function pause(){paused=true;release();menuView();document.body.classList.add('is-paused');$('pause-overlay').classList.remove('hidden');$('resume').focus();}
+function pause(){paused=true;release();menuView();document.body.classList.add('is-paused');$('pause-overlay').classList.remove('hidden');updateOrientation();$('resume').focus();}
 function lock(){if(touchLayout())return;try{const result=canvas.requestPointerLock();if(result)void result.catch(()=>{});}catch{/* Drag and keyboard controls remain available. */}}
-function resume(){paused=false;document.body.classList.remove('is-paused');$('pause-overlay').classList.add('hidden');if(active){canvas.focus();lock();}else $('start').focus();}
+function resume(){paused=false;document.body.classList.remove('is-paused');$('pause-overlay').classList.add('hidden');updateOrientation();if(active){canvas.focus();lock();}else $('start').focus();}
 function showManual(platform:'desktop'|'mobile'){
   const isMobile=platform==='mobile';
   $('manual-desktop').classList.toggle('hidden',isMobile);$('manual-mobile').classList.toggle('hidden',!isMobile);
   $('manual-desktop-tab').setAttribute('aria-selected',String(!isMobile));$('manual-mobile-tab').setAttribute('aria-selected',String(isMobile));
 }
-function start(){active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('intro').classList.add('departed');$('intro').inert=true;$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');lock();notify(touchLayout()?'左下摇杆移动 · 滑动右侧转向 · 右上角暂停':'W 推进 · 鼠标转向 · 空格制动 · N 自动前往目标');}
+function start(){active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('intro').classList.add('departed');$('intro').inert=true;$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();if(touchLayout())void fullscreen(false);lock();notify(touchLayout()?'左手摇杆移动 · 右侧滑动转向 · 右上角暂停':'W 推进 · 鼠标转向 · 空格制动 · N 自动前往目标');}
 $('start').onclick=start;
 $('resume').onclick=resume;
 $('pause-button').onclick=pause;$('pause-shortcut').onclick=pause;
@@ -137,17 +191,22 @@ $('show-instructions').onclick=()=>{
 $('instructions-back').onclick=()=>{menuView();$('show-instructions').focus();};
 $('manual-desktop-tab').onclick=()=>showManual('desktop');$('manual-mobile-tab').onclick=()=>showManual('mobile');
 $('home').onclick=e=>{e.preventDefault();pause();};
-$('reset').onclick=()=>{release();expedition.reset();camera.position.copy(flight.position).add(new T.Vector3(0,7,24));selected=0;updateCard();paused=false;active=false;document.body.classList.remove('active-flight','on-foot','is-paused');$('intro').classList.remove('departed');$('intro').inert=false;$('pause-overlay').classList.add('hidden');$('reticle').classList.add('hidden');$('start').focus();notify('已返回出发点');};
+$('reset').onclick=()=>{release();expedition.reset();camera.position.copy(flight.position).add(new T.Vector3(0,7,24));selected=0;updateCard();paused=false;active=false;document.body.classList.remove('active-flight','on-foot','is-paused');$('intro').classList.remove('departed');$('intro').inert=false;$('pause-overlay').classList.add('hidden');$('reticle').classList.add('hidden');updateOrientation();$('start').focus();notify('已返回出发点');};
 function updateCard(){const p=planets[selected];$('planet-name').textContent=p.name;$('planet-code').textContent=p.code;$('planet-description').textContent=p.description;$('planet-type').textContent=p.type;$('planet-index').textContent=`0${selected+1} / 03`;$('marker-name').textContent=p.name;}
 $('next').onclick=()=>{selected=(selected+1)%planets.length;updateCard();};
 $('previous').onclick=()=>{selected=(selected+planets.length-1)%planets.length;updateCard();};
-function navigate(){if(paused)return;if(!active)start();if(flight.mode==='navigation'){flight.cancel();release();return;}expedition.navigate(planets[selected]);release();}
+function navigate(){if(paused||orientationBlocked)return;if(!active)start();if(flight.mode==='navigation'){flight.cancel();release();return;}expedition.navigate(planets[selected]);release();}
 $('approach').onclick=navigate;
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
 addEventListener('mouseup',()=>drag=false);
 addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){flight.mouseX+=T.MathUtils.clamp(e.movementX,-80,80);flight.mouseY+=T.MathUtils.clamp(e.movementY,-80,80);}});
 document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement){drag=false;flight.mouseX=0;flight.mouseY=0;}});
 addEventListener('keydown',e=>{
+  if(orientationBlocked&&!paused&&e.code==='Tab'){
+    if(e.shiftKey&&document.activeElement===$('rotate-fullscreen')){e.preventDefault();$('rotate-menu').focus();}
+    else if(!e.shiftKey&&document.activeElement===$('rotate-menu')){e.preventDefault();$('rotate-fullscreen').focus();}
+    return;
+  }
   if(paused){
     if(e.code==='Escape'&&!e.repeat){e.preventDefault();if(!$('instructions-view').classList.contains('hidden')){menuView();$('show-instructions').focus();}else resume();}
     if(e.code==='Tab'){
@@ -158,7 +217,7 @@ addEventListener('keydown',e=>{
   }
   if(['Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)&&active)e.preventDefault();
   if(e.code==='Escape'&&!e.repeat){pause();return;}
-  if(!active||paused||e.repeat)return;
+  if(!active||paused||orientationBlocked||e.repeat)return;
   if(e.code==='KeyF'){expedition.interact();return;}
   if(e.code==='KeyR'){expedition.takeoff();return;}
   if(e.code==='Space'&&expedition.onFoot){expedition.walker.jump();return;}
@@ -166,18 +225,19 @@ addEventListener('keydown',e=>{
   keyboardKeys.add(e.code);
 });
 addEventListener('keyup',e=>keyboardKeys.delete(e.code));
-addEventListener('blur',()=>{if(active&&!paused)pause();});
+addEventListener('blur',()=>{if(active&&!paused&&!fullscreenTransition)pause();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&active)pause();});
 $('landing-prompt').onclick=()=>expedition.interact();
 $('takeoff-prompt').onclick=()=>expedition.takeoff();
-addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,touchLayout()?1.5:1.8));camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();document.body.classList.toggle('touch-layout',touchLayout());mobile.reset();});
+addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,touchLayout()?1.5:1.8));camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();document.body.classList.toggle('touch-layout',touchLayout());release();updateOrientation();});
+screen.orientation?.addEventListener('change',updateOrientation);
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();pause();notify('图形上下文已丢失，请刷新页面重新进入');});
 
 const cameraPosition=new T.Vector3(),cameraLook=new T.Vector3(),worldUp=new T.Vector3(0,1,0),projection=new T.Vector3();
 camera.position.copy(flight.position).add(new T.Vector3(0,7,24));
 function frame(now:number){
   const dt=Math.min((now-last)/1000,.04);last=now;
-  if(!paused){clockTime+=dt;if(active){
+  if(!paused&&!orientationBlocked){clockTime+=dt;if(active){
     flight.keys.clear();for(const code of keyboardKeys)flight.keys.add(code);for(const code of mobile.keys)flight.keys.add(code);
     expedition.update(dt);
   }}
@@ -211,7 +271,7 @@ function frame(now:number){
   cameraPosition.copy(desiredCamera);
   // A chase camera must remain above terrain even when the player flies towards it.
   for(const p of planets){const radial=cameraPosition.clone().sub(p.center);const direction=radial.clone().normalize();const safe=(onFoot?groundRadius(p,direction):surfaceRadius(p,direction))+(onFoot?.65:4);if(radial.length()<safe)cameraPosition.copy(p.center).addScaledVector(direction,safe);}
-  if(!paused){camera.position.lerp(cameraPosition,1-Math.exp(-dt*(onFoot?8:4)));cameraLook.lerp(desiredLook,1-Math.exp(-dt*(onFoot?9:5)));worldUp.lerp(cameraUp,1-Math.exp(-dt*6));}
+  if(!paused&&!orientationBlocked){camera.position.lerp(cameraPosition,1-Math.exp(-dt*(onFoot?8:4)));cameraLook.lerp(desiredLook,1-Math.exp(-dt*(onFoot?9:5)));worldUp.lerp(cameraUp,1-Math.exp(-dt*6));}
   // Clamp the interpolated camera too, so entering a hillside never clips through it.
   if(onFoot){const radial=camera.position.clone().sub(walker.body.center);const direction=radial.clone().normalize();const safe=groundRadius(walker.body,direction)+.65;if(radial.length()<safe)camera.position.copy(walker.body.center).addScaledVector(direction,safe);}
   camera.up.copy(worldUp).normalize();camera.lookAt(cameraLook);
@@ -230,7 +290,7 @@ function frame(now:number){
       motionPositions.set([v1.x,v1.y,v1.z,v2.x,v2.y,v2.z],i*6);
     }motionGeometry.getAttribute('position').needsUpdate=true;motionGeometry.computeBoundingSphere();
   }
-  if(audio&&engineGain&&oscillator){engineGain.gain.setTargetAtTime(soundEnabled&&active&&!paused&&flight.mode!=='landed'?.012+flight.speed*.00006:0,audio.currentTime,.25);oscillator.frequency.setTargetAtTime(32+flight.speed*.16,audio.currentTime,.2);}
+  if(audio&&engineGain&&oscillator){engineGain.gain.setTargetAtTime(soundEnabled&&active&&!paused&&!orientationBlocked&&flight.mode!=='landed'?.012+flight.speed*.00006:0,audio.currentTime,.25);oscillator.frequency.setTargetAtTime(32+flight.speed*.16,audio.currentTime,.2);}
   uiTime+=dt;
   if(uiTime>.08){
     uiTime=0;$('speed').textContent=onFoot?actorSpeed.toFixed(1):Math.round(actorSpeed).toString();
@@ -267,7 +327,7 @@ function frame(now:number){
   requestAnimationFrame(frame);
 }
 cameraLook.copy(flight.position).add(new T.Vector3(3.5,2.3,-28));
-updateCard();requestAnimationFrame(frame);
+updateCard();updateOrientation();requestAnimationFrame(frame);
 
 // A read-only snapshot supports reproducible diagnostics without changing gameplay.
 Object.defineProperty(window,'astral',{value:{snapshot:()=>({mode:expedition.onFoot?'on-foot':flight.mode,active,paused,speed:expedition.onFoot?expedition.walker.speed:flight.speed,altitude:expedition.onFoot?expedition.walker.altitude:flight.local.altitude,gravity:expedition.onFoot?expedition.walker.body.gravity:flight.local.body.gravity,grounded:expedition.walker.grounded,shipDistance:expedition.shipDistance,planet:expedition.onFoot?expedition.walker.body.name:flight.local.body.name,position:(expedition.onFoot?expedition.walker.position:flight.position).toArray(),renderer:renderer.info.render})},writable:false});

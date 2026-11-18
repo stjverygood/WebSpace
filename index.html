@@ -13,6 +13,7 @@
       <a class="brand" href="#" id="home" aria-label="暂停"><span class="brand-icon">✳</span> ASTRAL<span class="brand-divider"></span><span class="brand-sub">星间漫游</span></a>
       <div class="system-status"><i></i> KEPLER SYSTEM <span>开普勒恒星系</span></div>
       <button class="icon-button" id="sound" title="切换声音" aria-label="切换声音">声音 <span id="sound-state">关</span></button>
+      <button class="icon-button fullscreen-control" id="fullscreen-button" title="进入全屏" aria-label="进入全屏"><span class="fullscreen-label">全屏</span><span>⛶</span></button>
       <button class="icon-button pause-control" id="pause-button" title="暂停菜单" aria-label="暂停游戏">暂停 <span>Ⅱ</span></button>
     </header>
     <main id="intro" class="intro">
@@ -21,7 +22,7 @@
       <p>驾驶你的飞船，穿过寂静的星海。<br>在一颗陌生行星上，找到属于自己的地平线。</p>
       <button class="primary" id="start">开始漫游 <span>↗</span></button>
       <div class="intro-note desktop-note"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> 驾驶飞船 <span class="note-dot">·</span> 鼠标控制视角</div>
-      <div class="intro-note touch-note">左手摇杆移动 · 右侧滑动转向<br>操作说明可在暂停菜单中查看</div>
+      <div class="intro-note touch-note">横屏漫游 · 左手移动，右手转向<br>操作说明可在暂停菜单中查看</div>
       <div class="edition">EXPLORATION BUILD <span>01 / 无需目的地</span></div>
     </main>
     <aside class="planet-card" id="planet-card">
@@ -62,7 +63,7 @@
           <div id="manual-mobile" role="tabpanel" aria-labelledby="manual-mobile-tab" class="hidden">
             <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>左下摇杆</dt><dd>上推前进，下拉反向减速；左右平移</dd></div><div><dt>滑动右侧画面</dt><dd>调整飞船朝向</dd></div><div><dt>按住「加速」</dt><dd>持续向前加速</dd></div><div><dt>按住「制动」</dt><dd>减速至悬停</dd></div><div><dt>按住「左滚 / 右滚」</dt><dd>向对应方向翻滚</dd></div><div><dt>「下船 / 起飞」</dt><dd>降落并下船 / 登船后起飞</dd></div><div><dt>行星卡片 ← / →</dt><dd>选择目的地</dd></div><div><dt>「设为航向」</dt><dd>自动接近；再次点击取消导航</dd></div></dl>
             <h3>地表探索</h3><dl class="manual-list"><div><dt>左下摇杆</dt><dd>前后左右行走，松手停止</dd></div><div><dt>滑动右侧画面</dt><dd>转动第三人称视角</dd></div><div><dt>按住「奔跑」+ 摇杆</dt><dd>加快移动</dd></div><div><dt>点击「跳跃」</dt><dd>起跳，落地后可再次跳跃</dd></div><div><dt>点击「登船」</dt><dd>靠近停泊飞船后进入驾驶舱</dd></div><div><dt>右上「暂停」</dt><dd>暂停游戏，进入菜单</dd></div></dl>
-            <p class="manual-tip">支持双手同时操作：左手移动，右手转向或点击动作按钮。适配 9:16 竖屏和手机安全区域。</p>
+            <p class="manual-tip">横屏游玩，按 16:9 设计并适配更宽屏幕。左手移动，右手转向或点击动作按钮，可同时操作。点击「全屏」可尝试隐藏浏览器工具栏并锁定横屏；不支持时，开启手机自动旋转后手动横置即可。退出全屏会自动暂停。</p>
           </div>
           <p class="manual-rules">下船条件：距地表 90 m 内、速度低于 20 m/s，自动落稳后下船。登船条件：距飞船 9 m 内且已落地。</p>
         </div>
@@ -72,6 +73,9 @@
       <div class="joystick-area"><span id="joystick-label">推进 / 平移</span><div id="joystick" class="joystick" role="group" aria-label="虚拟移动摇杆"><span class="joystick-axis">＋</span><div id="joystick-thumb" class="joystick-thumb"></div></div></div>
       <div class="look-hint">滑动右侧 · 调整视角</div>
       <div class="touch-actions"><button id="touch-roll-left" class="ship-only touch-small" aria-label="向左翻滚">左滚</button><button id="touch-roll-right" class="ship-only touch-small" aria-label="向右翻滚">右滚</button><button id="touch-boost">加速</button><button id="touch-brake" class="ship-only">制动</button><button id="touch-jump" class="foot-only">跳跃</button><button id="touch-action" class="touch-accent">下船</button><button id="touch-launch" class="hidden">起飞</button></div>
+    </div>
+    <div id="rotate-overlay" class="rotate-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rotate-title">
+      <div class="rotate-card"><div class="eyebrow">A WIDER HORIZON</div><div class="rotate-illustration" aria-hidden="true"><span class="rotate-phone"></span><span class="rotate-arrow">↻</span></div><h2 id="rotate-title">把手机横过来。</h2><p>更宽的星海，留给双手探索。</p><button id="rotate-fullscreen" class="primary">尝试全屏横屏 <span>⛶</span></button><p id="rotate-note" class="rotate-note" role="status">请开启手机自动旋转，横置后即可游玩。<br>浏览器不支持方向锁定时，可手动旋转手机。</p><button id="rotate-menu" class="reset-button">菜单与操作说明</button></div>
     </div>
     <div id="error" class="error hidden"></div>
     <script type="module" src="/src/main.ts"></script>
