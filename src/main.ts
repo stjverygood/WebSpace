@@ -391,7 +391,7 @@ function frame(now:number){
     const touchActionLabel=onFoot?expedition.canBoardVehicle?'上车':'登船':inVehicle?'下车':'下船';
     const touchActionIcon=onFoot?expedition.canBoardVehicle?'vehicle':'ship':inVehicle?'exit':'land';
     if(touchAction.dataset.icon!==touchActionIcon){touchAction.dataset.icon=touchActionIcon;touchAction.innerHTML=INTERACTION_ICONS[touchActionIcon];}
-    if(touchAction.getAttribute('aria-label')!==touchActionLabel){touchAction.setAttribute('aria-label',touchActionLabel);touchAction.title=touchActionLabel;}
+    if(touchAction.getAttribute('aria-label')!==touchActionLabel)touchAction.setAttribute('aria-label',touchActionLabel);
     $('touch-action').classList.toggle('hidden',!inVehicle&&(onFoot?!(expedition.canBoard||expedition.canBoardVehicle):!canLand));
     $<HTMLButtonElement>('touch-action').disabled=onFoot?!(expedition.canBoard||expedition.canBoardVehicle):inVehicle?false:!canLand||flight.mode==='landing'||flight.mode==='takeoff';
     $('touch-launch').classList.toggle('hidden',onFoot||inVehicle||flight.mode!=='landed');
