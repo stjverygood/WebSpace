@@ -177,7 +177,7 @@ function updateOrientation(){
   document.body.classList.toggle('needs-rotation',blocked);
   const overlay=$('rotate-overlay'),visible=blocked&&!paused,wasVisible=!overlay.classList.contains('hidden');
   overlay.classList.toggle('hidden',!visible);
-  document.querySelectorAll<HTMLElement>('canvas,header,.hud,.surface-info,#touch-controls,#landing-prompt,#takeoff-prompt').forEach(el=>el.inert=visible);
+  document.querySelectorAll<HTMLElement>('canvas,header,.hud,#touch-controls,#landing-prompt,#takeoff-prompt').forEach(el=>el.inert=visible);
   if(visible&&!wasVisible)$('rotate-fullscreen').focus();
 }
 type ExtendedDocument=Document&{webkitFullscreenElement?:Element;webkitExitFullscreen?:()=>Promise<void>|void};
@@ -377,12 +377,6 @@ function frame(now:number){
   uiTime+=dt;
   if(uiTime>.08){
     uiTime=0;
-    $('surface-info').classList.toggle('hidden',!onFoot&&!inVehicle);
-    $('surface-planet').textContent=local.body.name;
-    $('surface-gravity').textContent=`GRAVITY ${local.body.gravity.toFixed(1)} m/s² · ${(local.body.gravity/9.8).toFixed(2)} g`;
-    $('surface-info').querySelector('small')!.textContent=inVehicle?'W/S 驾驶 · A/D 转向 · F 下车':'WASD 行走 · Shift 奔跑 · Space 跳跃';
-    if(onFoot){const toShip=flight.position.clone().sub(walker.position);const right=new T.Vector3().crossVectors(walker.forward,walker.normal);$('ship-bearing').style.transform=`rotate(${Math.atan2(toShip.dot(right),toShip.dot(walker.forward))*180/Math.PI}deg)`;}
-    $('ship-distance').textContent=`${expedition.shipDistance.toFixed(0)} m`;
     $('boost-key').textContent=onFoot?'SHIFT':'W / S';$('boost-label').textContent=onFoot?'奔跑':inVehicle?'驾驶':'推进';$('space-label').textContent='跳跃';$('space-control').classList.toggle('hidden',!onFoot);$('interact-label').textContent=onFoot?'上车 / 登船':inVehicle?'下车':'下船';
     const canLand=active&&(onFoot?expedition.canBoard||expedition.canBoardVehicle:inVehicle||local.altitude<90&&flight.speed<20||flight.mode==='landed');
     $('landing-prompt').classList.toggle('hidden',!canLand||!onFoot&&(flight.mode==='landing'||flight.mode==='takeoff'));
