@@ -262,7 +262,16 @@ function setupSettings(){
   }
 }
 setupSettings();
-function start(){expedition.beginOnPlanet();lastControlState='';camera.position.copy(expedition.walker.position).addScaledVector(expedition.walker.forward,-settings.cameraDistance*.9).addScaledVector(expedition.walker.normal,settings.cameraDistance*.38);cameraLook.copy(expedition.walker.position).addScaledVector(expedition.walker.normal,1.25);worldUp.copy(expedition.walker.normal);active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();lock();}
+function start(){
+  expedition.beginOnPlanet();lastControlState='';
+  const walker=expedition.walker,normal=walker.normal;
+  cameraLook.copy(walker.position).addScaledVector(normal,1.25);
+  camera.position.copy(cameraLook)
+    .addScaledVector(walker.forward,-settings.cameraDistance*Math.cos(walker.pitch))
+    .addScaledVector(normal,settings.cameraDistance*Math.sin(walker.pitch));
+  worldUp.copy(normal);camera.up.copy(normal).normalize();camera.lookAt(cameraLook);
+  active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();lock();
+}
 $('resume').onclick=resume;
 $('pause-button').onclick=pause;$('pause-shortcut').onclick=pause;
 $('show-instructions').onclick=()=>{
