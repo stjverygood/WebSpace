@@ -211,7 +211,7 @@ $('settings-back').onclick=()=>{menuView();$('show-settings').focus();};
 $('manual-desktop-tab').onclick=()=>showManual('desktop');$('manual-mobile-tab').onclick=()=>showManual('mobile');
 $('return-menu').onclick=()=>{
   release();expedition.reset();camera.position.copy(flight.position).add(new T.Vector3(0,7,24));
-  paused=false;active=false;document.body.classList.remove('active-flight','on-foot','is-paused');$('pause-overlay').classList.add('hidden');$('reticle').classList.add('hidden');
+  paused=false;active=false;document.body.classList.remove('active-flight','on-foot','is-landed','is-paused');$('pause-overlay').classList.add('hidden');$('reticle').classList.add('hidden');
   $('game-root').hidden=true;$('launcher').hidden=false;$('launch-game').focus();
   try{screen.orientation?.unlock?.();}catch{/* Some browsers do not expose orientation control. */}
   if(isFullscreen()){try{if(document.exitFullscreen)void document.exitFullscreen();else void fullscreenDocument.webkitExitFullscreen?.();}catch{/* Browser fullscreen controls remain available. */}}
@@ -266,6 +266,7 @@ function frame(now:number){
   const local=onFoot?{...nearest(walker.position),altitude:walker.altitude}:flight.local;
   const near=T.MathUtils.clamp(1-local.altitude/110,0,1);
   document.body.classList.toggle('on-foot',onFoot);
+  document.body.classList.toggle('is-landed',active&&!onFoot&&flight.mode==='landed');
   astronaut.root.visible=onFoot;astronaut.animate(walker);
   contactShadow.visible=onFoot;
   if(onFoot){

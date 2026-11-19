@@ -498,6 +498,15 @@ button {
 .on-foot .touch-left-panel {
   display: none;
 }
+.is-landed .touch-left-panel {
+  display: grid !important;
+}
+.is-landed .touch-right-panel .touch-throttle {
+  display: grid !important;
+}
+.is-landed .touch-actions .touch-jump {
+  display: none !important;
+}
 .joystick {
   position: absolute;
   left: 50%;
