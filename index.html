@@ -70,8 +70,26 @@
     <div id="error" class="error hidden"></div>
     </div>
     <main id="launcher" class="launcher">
-      <header class="launch-brand"><span aria-hidden="true">✳</span><strong>星际公民</strong></header>
-      <button id="launch-game" class="launch-button">开始游戏</button>
+      <div id="launcher-menu" class="launcher-menu">
+        <header class="launch-brand"><span aria-hidden="true">✳</span><strong>星际公民</strong></header>
+        <button id="launch-game" class="launch-button">开始游戏</button>
+        <nav class="launcher-options" aria-label="主菜单">
+          <button id="developer-open" class="launcher-option">开发者信息</button>
+          <span aria-hidden="true"></span>
+          <button id="exit-game" class="launcher-option">退出游戏</button>
+        </nav>
+        <p id="exit-hint" class="exit-hint" role="status" hidden>浏览器不允许网页关闭标签页，请手动关闭当前标签页。</p>
+      </div>
+      <section id="developer-view" class="developer-view" aria-labelledby="developer-title" hidden>
+        <button id="developer-back" class="developer-back">← 返回主菜单</button>
+        <div class="developer-eyebrow">ABOUT THE DEVELOPER</div>
+        <h1 id="developer-title">开发者信息</h1>
+        <dl class="developer-details">
+          <div><dt>开发者</dt><dd>史太杰与他的 Codex</dd></div>
+          <div><dt>联系方式</dt><dd><a href="mailto:j18922305405@gmail.com">j18922305405@gmail.com</a></dd></div>
+          <div><dt>GitHub 仓库</dt><dd><a href="https://github.com/stjverygood/WebSpace" target="_blank" rel="noopener noreferrer">github.com/stjverygood/WebSpace ↗</a></dd></div>
+        </dl>
+      </section>
     </main>
     <script type="module" src="/src/bootstrap.ts"></script>
   </body>

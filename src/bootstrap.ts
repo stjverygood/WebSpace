@@ -32,6 +32,15 @@ async function requestPortrait(){
 }
 
 function $(id:string){return document.getElementById(id)!;}
+const launcherMenu=$('launcher-menu'),developerView=$('developer-view');
+$('developer-open').addEventListener('click',()=>{launcherMenu.hidden=true;developerView.hidden=false;$('developer-back').focus();});
+$('developer-back').addEventListener('click',()=>{developerView.hidden=true;launcherMenu.hidden=false;$('developer-open').focus();});
+$('exit-game').addEventListener('click',()=>{
+  $('exit-hint').hidden=true;
+  if(document.fullscreenElement)void document.exitFullscreen().catch(()=>{});
+  try{window.close();}catch{/* Browsers only let a page close a tab it opened. */}
+  window.setTimeout(()=>{if(!window.closed)$('exit-hint').hidden=false;},120);
+});
 document.getElementById('rotate-fullscreen')!.onclick=()=>void requestPortrait();
 addEventListener('resize',updateLauncherOrientation);
 addEventListener('orientationchange',updateLauncherOrientation);
