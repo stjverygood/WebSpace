@@ -59,9 +59,9 @@ export class Flight {
       if(this.elapsed>3.3){this.mode='manual';this.onNotice('起飞完成 · 已恢复手动驾驶');}return;
     }
     const oldBank=this.bankAngle;
-    this.bankAngle-=this.joystickX*dt*1.25;
+    this.bankAngle+=(key('RollLeft')-key('RollRight'))*dt*1.25;
     const roll=this.bankAngle-oldBank;
-    const yaw=(key('ArrowLeft')-key('ArrowRight'))*dt*1.05-this.mouseX*.0018;
+    const yaw=(key('ArrowLeft')-key('ArrowRight')-this.joystickX)*dt*1.05-this.mouseX*.0018;
     const pitch=(key('ArrowUp')-key('ArrowDown')+this.joystickY)*dt*.85-this.mouseY*.0018;
     this.rotation.multiply(new T.Quaternion().setFromAxisAngle(Y,yaw));
     this.rotation.multiply(new T.Quaternion().setFromAxisAngle(X,pitch));

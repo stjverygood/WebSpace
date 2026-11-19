@@ -100,6 +100,8 @@ export class MobileControls {
     this.hold("touch-boost", () => actions.onFoot() ? ["ShiftLeft"] : []);
     this.hold("touch-reverse", () => actions.onFoot() ? [] : ["KeyS"]);
     this.hold("touch-forward", () => actions.onFoot() ? [] : ["KeyW"]);
+    this.hold("touch-roll-left", () => actions.onFoot() ? [] : ["RollLeft"]);
+    this.hold("touch-roll-right", () => actions.onFoot() ? [] : ["RollRight"]);
     document.getElementById("touch-action")!.onclick = () => {
       if (actions.enabled()) actions.interact();
     };

@@ -279,6 +279,10 @@
     right: max(24px, env(safe-area-inset-right));
     bottom: calc(62px + env(safe-area-inset-bottom));
   }
+  .touch-layout .touch-left-panel {
+    top: calc(68px + env(safe-area-inset-top));
+    left: max(24px, env(safe-area-inset-left));
+  }
   .touch-layout .touch-throttle {
     width: 160px;
     margin-bottom: 0;

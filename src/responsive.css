@@ -441,6 +441,33 @@ button {
   align-items: flex-end;
   gap: 8px;
   pointer-events: auto;
+  z-index: 2;
+}
+.touch-left-panel {
+  position: absolute;
+  top: calc(74px + env(safe-area-inset-top));
+  left: max(18px, env(safe-area-inset-left));
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  width: 113px;
+  pointer-events: auto;
+  z-index: 2;
+}
+.touch-left-panel button {
+  min-height: 38px;
+  border: 1px solid #b8e6ce30;
+  border-radius: 7px;
+  background: #0b202ad1;
+  color: #c3d9cf;
+  font-size: 10px;
+  backdrop-filter: blur(10px);
+  touch-action: none;
+}
+.touch-left-panel button:active,
+.touch-left-panel button.pressed {
+  border-color: #b8e6ceaa;
+  background: #b8e6ce33;
 }
 .touch-throttle {
   display: grid;
@@ -465,6 +492,9 @@ button {
   background: #b8e6ce33;
 }
 .on-foot .touch-right-panel .touch-throttle {
+  display: none;
+}
+.on-foot .touch-left-panel {
   display: none;
 }
 .joystick {
