@@ -15,10 +15,11 @@ export class Flight {
   keys=new Set<string>();
   mouseX=0;mouseY=0;
   joystickX=0;joystickY=0;
+  bankAngle=0;
   onNotice=(message:string)=>{void message;};
   get speed(){return this.velocity.length();}
   get local(){return nearest(this.position);}
-  reset(){this.position.set(0,30,50);this.rotation.identity();this.velocity.set(0,0,0);this.mode='manual';this.keys.clear();this.mouseX=0;this.mouseY=0;this.joystickX=0;this.joystickY=0;}
+  reset(){this.position.set(0,30,50);this.rotation.identity();this.velocity.set(0,0,0);this.mode='manual';this.keys.clear();this.mouseX=0;this.mouseY=0;this.joystickX=0;this.joystickY=0;this.bankAngle=0;}
   interact(){
     if(this.mode==='landed'){
       this.mode='takeoff';this.elapsed=0;this.onNotice('起飞程序启动');return;
@@ -29,7 +30,7 @@ export class Flight {
     if(this.speed>20){this.onNotice('速度过高 · 按住 S 反向推进减速至 20 m/s 以下');return;}
     this.landBody=local.body;this.landNormal.copy(local.normal);
     this.destination.copy(local.body.center).addScaledVector(local.normal,surfaceRadius(local.body,local.normal)+2.8);
-    this.mode='landing';this.onNotice('辅助降落启动 · 正在稳定姿态');
+    this.bankAngle=0;this.mode='landing';this.onNotice('辅助降落启动 · 正在稳定姿态');
   }
   tangentAttitude(normal:T.Vector3){
     const forward=new T.Vector3(0,0,-1).applyQuaternion(this.rotation);
@@ -57,10 +58,16 @@ export class Flight {
       this.position.addScaledVector(this.velocity,dt);
       if(this.elapsed>3.3){this.mode='manual';this.onNotice('起飞完成 · 已恢复手动驾驶');}return;
     }
-    const yaw=(key('ArrowLeft')-key('ArrowRight')-this.joystickX)*dt*1.05-this.mouseX*.0018;
+    const stickActive=Math.abs(this.joystickX)>.04;
+    const oldBank=this.bankAngle;
+    if(stickActive)this.bankAngle=T.MathUtils.clamp(this.bankAngle-this.joystickX*dt*1.25,-.7,.7);
+    else this.bankAngle=T.MathUtils.damp(this.bankAngle,0,1.8,dt);
+    const roll=this.bankAngle-oldBank;
+    const yaw=(key('ArrowLeft')-key('ArrowRight'))*dt*1.05-this.mouseX*.0018+Math.sin(this.bankAngle)*dt*.9;
     const pitch=(key('ArrowUp')-key('ArrowDown')-this.joystickY)*dt*.85-this.mouseY*.0018;
     this.rotation.multiply(new T.Quaternion().setFromAxisAngle(Y,yaw));
     this.rotation.multiply(new T.Quaternion().setFromAxisAngle(X,pitch));
+    this.rotation.multiply(new T.Quaternion().setFromAxisAngle(Z,roll));
     this.rotation.normalize();
     const proximity=this.local;
     const acceleration=90;

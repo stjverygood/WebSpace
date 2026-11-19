@@ -23,6 +23,9 @@ button {
 .topbar {
   justify-content: flex-end;
 }
+.hud {
+  border-top: 0;
+}
 .sound-setting {
   display: flex;
   align-items: center;

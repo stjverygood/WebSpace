@@ -18,7 +18,7 @@ function loadSettings():GameSettings{
   catch{return{...DEFAULT_SETTINGS};}
 }
 const settings=loadSettings();
-let cameraOrbitYaw=0,cameraOrbitPitch=0;
+let cameraOrbitYaw=0,cameraOrbitPitch=0,cameraLookIdle=0;
 const touchLayout=()=>matchMedia('(any-pointer: coarse), (max-width: 700px), (max-width: 1024px) and (max-height: 600px)').matches;
 document.body.classList.toggle('touch-layout',touchLayout());
 const keyboardKeys=new Set<string>();
@@ -122,7 +122,7 @@ function initAudio(){
 }
 $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.resume();$('sound').textContent=`声音：${soundEnabled?'开':'关'}`;$('sound').setAttribute('aria-pressed',String(soundEnabled));}catch{notify('此浏览器暂不支持音频');}};
 
-const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,look:(x,y)=>{if(expedition.onFoot){flight.mouseX-=x*settings.viewSensitivity;flight.mouseY-=y*settings.viewSensitivity;}else{cameraOrbitYaw-=x*.0018*settings.viewSensitivity;cameraOrbitPitch=T.MathUtils.clamp(cameraOrbitPitch-y*.0018*settings.viewSensitivity,-.65,.65);}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
+const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,look:(x,y)=>{if(expedition.onFoot){flight.mouseX-=x*settings.viewSensitivity;flight.mouseY-=y*settings.viewSensitivity;}else{cameraLookIdle=0;cameraOrbitYaw-=x*.0018*settings.viewSensitivity;cameraOrbitPitch=T.MathUtils.clamp(cameraOrbitPitch-y*.0018*settings.viewSensitivity,-.65,.65);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,6,18);const input=$<HTMLInputElement>('setting-distance');input.value=String(settings.cameraDistance);$<HTMLOutputElement>('setting-distance-value').value=`${settings.cameraDistance.toFixed(1)} m`;try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
 function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
   const blocked=needsLandscape(innerWidth,innerHeight,touchLayout());
@@ -265,6 +265,10 @@ function frame(now:number){
   if(lastOnFoot!==expedition.onFoot){keyboardKeys.clear();mobile.reset();flight.keys.clear();lastOnFoot=expedition.onFoot;}
   const onFoot=expedition.onFoot,walker=expedition.walker;
   const local=onFoot?{...nearest(walker.position),altitude:walker.altitude}:flight.local;
+  if(active&&!onFoot&&touchLayout()&&!mobile.isCameraActive){
+    cameraLookIdle+=dt;
+    if(cameraLookIdle>.65){const recenter=1-Math.exp(-dt*1.5);cameraOrbitYaw*=1-recenter;cameraOrbitPitch*=1-recenter;}
+  }else cameraLookIdle=0;
   const near=T.MathUtils.clamp(1-local.altitude/110,0,1);
   document.body.classList.toggle('on-foot',onFoot);
   astronaut.root.visible=onFoot;astronaut.animate(walker);
@@ -288,8 +292,12 @@ function frame(now:number){
   shipCameraTarget.position.set(active?0:3.5,active?.8:2.3,active?0:-28);
   ship.updateMatrixWorld(true);
   const desiredLook=shipCameraTarget.getWorldPosition(new T.Vector3());
-  const desiredCamera=cameraOffset.applyQuaternion(flight.rotation).add(active?desiredLook:ship.position);
-  const cameraUp=onFoot?walker.normal:new T.Vector3(0,1,0).applyQuaternion(flight.rotation);
+  const chaseUp=local.altitude<180?local.normal:new T.Vector3(0,1,0);
+  const forward=new T.Vector3(0,0,-1).applyQuaternion(flight.rotation).normalize();
+  const chaseMatrix=new T.Matrix4().lookAt(new T.Vector3(),forward,chaseUp);
+  const chaseRotation=new T.Quaternion().setFromRotationMatrix(chaseMatrix);
+  const desiredCamera=cameraOffset.applyQuaternion(active&&!onFoot?chaseRotation:flight.rotation).add(active?desiredLook:ship.position);
+  const cameraUp=onFoot?walker.normal:active?chaseUp:worldUp;
   if(onFoot){
     desiredLook.copy(walker.position).addScaledVector(cameraUp,1.25);
     const footCameraDistance=settings.cameraDistance;
