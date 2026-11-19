@@ -97,9 +97,6 @@ export class MobileControls {
   get steering() {
     return { x: this.steeringX, y: this.steeringY };
   }
-  get isCameraActive() {
-    return this.lookPointers.size > 0;
-  }
   private pointerDistance() {
     if (this.lookPointers.size < 2) return null;
     const points = [...this.lookPointers.values()];
