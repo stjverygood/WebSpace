@@ -303,7 +303,7 @@ addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);renderer
 screen.orientation?.addEventListener('change',updateOrientation);
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();pause();notify('图形上下文已丢失，请刷新页面重新进入');});
 
-const cameraPosition=new T.Vector3(),cameraLook=new T.Vector3(),worldUp=new T.Vector3(0,1,0),projection=new T.Vector3();
+const cameraPosition=new T.Vector3(),cameraLook=new T.Vector3(),worldUp=new T.Vector3(0,1,0);
 camera.position.copy(flight.position).add(new T.Vector3(0,7,24));
 function frame(now:number){
   const dt=Math.min((now-last)/1000,.04);last=now;
@@ -395,11 +395,6 @@ function frame(now:number){
     $<HTMLButtonElement>('touch-action').disabled=onFoot?!(expedition.canBoard||expedition.canBoardVehicle):inVehicle?false:!canLand||flight.mode==='landing'||flight.mode==='takeoff';
     $('touch-launch').classList.toggle('hidden',onFoot||inVehicle||flight.mode!=='landed');
     $('takeoff-prompt').classList.toggle('hidden',!active||onFoot||inVehicle||flight.mode!=='landed');
-    projection.copy(flight.position).project(camera);
-    $('marker-name').textContent=`飞船 · ${expedition.shipDistance.toFixed(0)} m`;
-    const visible=active&&onFoot&&projection.z<1&&projection.z>0&&Math.abs(projection.x)<.85&&Math.abs(projection.y)<.75;
-    $('target-marker').classList.toggle('hidden',!visible);
-    if(visible){$('target-marker').style.left=`${(projection.x*.5+.5)*innerWidth}px`;$('target-marker').style.top=`${(-projection.y*.5+.5)*innerHeight}px`;}
   }
   renderer.render(scene,camera);
   requestAnimationFrame(frame);
