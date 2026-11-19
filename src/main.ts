@@ -21,7 +21,7 @@ const INTERACTION_ICONS={
 };
 function storedValue(value:unknown,min:number,max:number,fallback:number){const n=Number(value);return Number.isFinite(n)?T.MathUtils.clamp(n,min,max):fallback;}
 function loadSettings():GameSettings{
-  try{const saved=JSON.parse(localStorage.getItem('astral-settings')||'{}') as Partial<GameSettings>;const oldDefault=Number(saved.cameraDistance)===10.5;return{joystickSensitivity:storedValue(saved.joystickSensitivity,.25,2.5,DEFAULT_SETTINGS.joystickSensitivity),cameraDistance:oldDefault?DEFAULT_SETTINGS.cameraDistance:storedValue(saved.cameraDistance,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX,DEFAULT_SETTINGS.cameraDistance),viewSensitivity:storedValue(saved.viewSensitivity,.25,2.5,DEFAULT_SETTINGS.viewSensitivity),universeSpeed:storedValue(saved.universeSpeed,0,5,DEFAULT_SETTINGS.universeSpeed)};}
+  try{const saved=JSON.parse(localStorage.getItem('astral-settings')||'{}') as Partial<GameSettings>;const oldDefault=Number(saved.cameraDistance)===10.5;return{joystickSensitivity:storedValue(saved.joystickSensitivity,.25,2.5,DEFAULT_SETTINGS.joystickSensitivity),cameraDistance:oldDefault?DEFAULT_SETTINGS.cameraDistance:storedValue(saved.cameraDistance,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX,DEFAULT_SETTINGS.cameraDistance),viewSensitivity:storedValue(saved.viewSensitivity,.25,2.5,DEFAULT_SETTINGS.viewSensitivity),universeSpeed:storedValue(saved.universeSpeed,0,100,DEFAULT_SETTINGS.universeSpeed)};}
   catch{return{...DEFAULT_SETTINGS};}
 }
 const settings=loadSettings();
@@ -325,7 +325,7 @@ camera.position.copy(flight.position).add(new T.Vector3(0,7,24));
 function frame(now:number){
   const dt=Math.min((now-last)/1000,.04);last=now;
   if(!paused&&!orientationBlocked){clockTime+=dt;if(active){
-    tickPlanetClock(dt,settings.universeSpeed);
+    tickPlanetClock(dt,settings.universeSpeed*10);
     for(const body of planets){
       const delta=planetRotationDelta(body),centerVelocity=planetVelocity(body,dt);
       if(expedition.walker.body===body&&(expedition.onFoot||expedition.inVehicle)){
