@@ -13,6 +13,12 @@ const canvas=$<HTMLCanvasElement>('universe');
 type GameSettings={joystickSensitivity:number;cameraDistance:number;viewSensitivity:number};
 const CAMERA_DISTANCE_MIN=4,CAMERA_DISTANCE_MAX=32;
 const DEFAULT_SETTINGS:GameSettings={joystickSensitivity:1,cameraDistance:16.5,viewSensitivity:1};
+const INTERACTION_ICONS={
+  vehicle:'<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 14 1.5-4.6A2 2 0 0 1 7.4 8h9.2a2 2 0 0 1 1.9 1.4L20 14v5h-3v-2H7v2H4zM4 14h16M8 19v1m8-1v1"/><circle cx="8" cy="14" r="1"/><circle cx="16" cy="14" r="1"/></svg>',
+  ship:'<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 6.5 20l5.5-3 5.5 3L12 3Z"/><path d="M9.5 11h5M8 16h8"/></svg>',
+  exit:'<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V4h9v16M10 12h10m-4-4 4 4-4 4M3 20h18"/></svg>',
+  land:'<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M12 4v11m-5-5 5 5 5-5M8 20l1-2h6l1 2"/></svg>',
+};
 function storedValue(value:unknown,min:number,max:number,fallback:number){const n=Number(value);return Number.isFinite(n)?T.MathUtils.clamp(n,min,max):fallback;}
 function loadSettings():GameSettings{
   try{const saved=JSON.parse(localStorage.getItem('astral-settings')||'{}') as Partial<GameSettings>;const oldDefault=Number(saved.cameraDistance)===10.5;return{joystickSensitivity:storedValue(saved.joystickSensitivity,.25,2.5,DEFAULT_SETTINGS.joystickSensitivity),cameraDistance:oldDefault?DEFAULT_SETTINGS.cameraDistance:storedValue(saved.cameraDistance,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX,DEFAULT_SETTINGS.cameraDistance),viewSensitivity:storedValue(saved.viewSensitivity,.25,2.5,DEFAULT_SETTINGS.viewSensitivity)};}
@@ -381,7 +387,11 @@ function frame(now:number){
     const canLand=active&&(onFoot?expedition.canBoard||expedition.canBoardVehicle:inVehicle||local.altitude<90&&flight.speed<20||flight.mode==='landed');
     $('landing-prompt').classList.toggle('hidden',!canLand||!onFoot&&(flight.mode==='landing'||flight.mode==='takeoff'));
     $('landing-text').textContent=onFoot?expedition.canBoardVehicle?'上车':'登上飞船':inVehicle?'下车':flight.mode==='landed'?'离开飞船 · 地表探索':'降落并下船';
-    $('touch-action').textContent=onFoot?expedition.canBoardVehicle?'上车':'登船':inVehicle?'下车':'下船';
+    const touchAction=$('touch-action');
+    const touchActionLabel=onFoot?expedition.canBoardVehicle?'上车':'登船':inVehicle?'下车':'下船';
+    const touchActionIcon=onFoot?expedition.canBoardVehicle?'vehicle':'ship':inVehicle?'exit':'land';
+    if(touchAction.dataset.icon!==touchActionIcon){touchAction.dataset.icon=touchActionIcon;touchAction.innerHTML=INTERACTION_ICONS[touchActionIcon];}
+    if(touchAction.getAttribute('aria-label')!==touchActionLabel){touchAction.setAttribute('aria-label',touchActionLabel);touchAction.title=touchActionLabel;}
     $('touch-action').classList.toggle('hidden',!inVehicle&&(onFoot?!(expedition.canBoard||expedition.canBoardVehicle):!canLand));
     $<HTMLButtonElement>('touch-action').disabled=onFoot?!(expedition.canBoard||expedition.canBoardVehicle):inVehicle?false:!canLand||flight.mode==='landing'||flight.mode==='takeoff';
     $('touch-launch').classList.toggle('hidden',onFoot||inVehicle||flight.mode!=='landed');

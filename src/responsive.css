@@ -12,13 +12,14 @@ button {
   touch-action: manipulation;
 }
 .pause-control {
-  min-height: 44px;
-  min-width: 64px;
-  gap: 8px;
-  padding: 0 12px;
+  width: 54px;
+  height: 54px;
+  min-height: 54px;
+  min-width: 54px;
+  padding: 0;
   justify-content: center;
   border: 1px solid #b3d4c62b;
-  border-radius: 5px;
+  border-radius: 18px;
   background: #0a171d66;
   backdrop-filter: blur(8px);
   font-size: 11px;
@@ -435,7 +436,7 @@ button {
 .touch-right-panel {
   position: absolute;
   right: max(18px, env(safe-area-inset-right));
-  bottom: calc(101px + env(safe-area-inset-bottom));
+  bottom: calc(104px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -450,25 +451,14 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
-  width: 113px;
+  width: auto;
   pointer-events: auto;
   z-index: 2;
   transform: translateY(-50%);
 }
 .touch-left-panel button {
-  min-height: 38px;
-  border: 1px solid #b8e6ce30;
-  border-radius: 7px;
-  background: #0b202ad1;
-  color: #c3d9cf;
-  font-size: 10px;
-  backdrop-filter: blur(10px);
-  touch-action: none;
-}
-.touch-left-panel button:active,
-.touch-left-panel button.pressed {
-  border-color: #b8e6ceaa;
-  background: #b8e6ce33;
+  width: 68px;
+  height: 68px;
 }
 .touch-left-panel .vehicle-only {
   display: none;
@@ -484,31 +474,10 @@ button {
 }
 .touch-throttle {
   display: grid;
-  width: 113px;
+  width: 146px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-  margin-bottom: 8px;
-}
-.touch-throttle button {
-  min-height: 38px;
-  border: 1px solid #b8e6ce30;
-  border-radius: 7px;
-  background: #0b202ad1;
-  color: #c3d9cf;
-  font-size: 10px;
-  backdrop-filter: blur(10px);
-  touch-action: none;
-}
-.touch-throttle button:active,
-.touch-throttle button.pressed {
-  border-color: #b8e6ceaa;
-  background: #b8e6ce33;
-}
-.touch-throttle button span {
-  display: inline-block;
-  font-size: 20px;
-  line-height: 1;
-  font-weight: 400;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 .on-foot .touch-right-panel .touch-throttle {
   display: none;
@@ -532,8 +501,8 @@ button {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 118px;
-  height: 118px;
+  width: 138px;
+  height: 138px;
   border: 1px solid #b8e6ce33;
   border-radius: 50%;
   background: radial-gradient(circle, #b8e6ce08, #0b1c2677);
@@ -559,8 +528,8 @@ button {
   font-weight: 300;
 }
 .joystick-thumb {
-  width: 46px;
-  height: 46px;
+  width: 54px;
+  height: 54px;
   background: linear-gradient(135deg, #c3e9d444, #b8e6ce17);
   border: 1px solid #bfebd67a;
   border-radius: 50%;
@@ -579,29 +548,18 @@ button {
 .touch-actions {
   position: static;
   display: grid;
-  grid-template-columns: repeat(2, 52px);
-  gap: 9px;
+  grid-template-columns: repeat(2, 68px);
+  gap: 10px;
   pointer-events: auto;
 }
-.touch-actions button {
-  width: 52px;
-  min-height: 47px;
-  border-radius: 8px;
-  border: 1px solid #b8e6ce30;
-  background: #0b202ad1;
-  color: #c3d9cf;
-  font-size: 11px;
-  backdrop-filter: blur(10px);
-  touch-action: none;
-}
+.touch-actions button { width: 68px; height: 68px; }
 .touch-actions button:active,
 .touch-actions button.pressed {
   border-color: #b8e6ceaa;
   background: #b8e6ce33;
 }
 .touch-actions .touch-small {
-  min-height: 35px;
-  font-size: 10px;
+  min-height: 68px;
 }
 .touch-actions button:disabled {
   opacity: 0.35;
@@ -623,15 +581,53 @@ button {
   display: none;
 }
 .touch-layout .touch-control-button {
-  border: 1px solid #b8e6ce30;
-  border-radius: 7px;
-  background: #0b202ad1;
-  color: #c3d9cf;
+  display: grid;
+  place-items: center;
+  border: 1px solid #c2e6d747;
+  border-radius: 21px;
+  background: linear-gradient(150deg, #152a30e8, #08161ee8);
+  color: #d4e8df;
+  box-shadow: inset 0 1px 0 #ecfff01b, 0 8px 22px #02080c55;
+  backdrop-filter: blur(12px);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background 120ms ease, border-color 120ms ease, transform 100ms ease, box-shadow 120ms ease;
 }
 .touch-layout .touch-control-button:active,
 .touch-layout .touch-control-button.pressed {
-  border-color: #b8e6ceaa;
-  background: #b8e6ce33;
+  border-color: #b8e6ce;
+  background: linear-gradient(145deg, #2b554b, #102c2e);
+  box-shadow: inset 0 2px 10px #02090a55, 0 3px 10px #02080c55;
+  transform: scale(.96);
+}
+.control-icon {
+  display: block;
+  width: 29px;
+  height: 29px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.touch-actions .touch-accent {
+  border-color: #b8e6ce77;
+  color: #c9f2dc;
+}
+.touch-layout .pause-control {
+  width: 54px;
+  height: 54px;
+  min-height: 54px;
+  min-width: 54px;
+  padding: 0;
+  border-radius: 18px;
+}
+.pause-control .control-icon {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
 }
 .touch-layout .surface-info {
   top: calc(90px + env(safe-area-inset-top));
@@ -738,15 +734,16 @@ button {
     height: 108px;
   }
   .touch-layout .touch-actions {
-    grid-template-columns: repeat(2, 48px);
-    gap: 7px;
+    grid-template-columns: repeat(2, 62px);
+    gap: 8px;
   }
   .touch-layout .touch-actions button {
-    width: 48px;
-    min-height: 43px;
+    width: 62px;
+    height: 62px;
+    min-height: 62px;
   }
   .touch-layout .touch-actions .touch-small {
-    min-height: 33px;
+    min-height: 62px;
   }
 }
 @media (pointer: coarse) and (orientation: landscape) {
