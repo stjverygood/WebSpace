@@ -83,9 +83,9 @@ for(let i=0;i<190;i++){
 
 function buildGroundVehicle(){
   const vehicle=new T.Group();
-  const shell=new T.MeshStandardMaterial({color:0xc9cbc5,roughness:.26,metalness:.82,flatShading:true});
-  const trim=new T.MeshStandardMaterial({color:0x20272a,roughness:.52,metalness:.48,flatShading:true});
-  const glass=new T.MeshStandardMaterial({color:0x172c34,roughness:.2,metalness:.62,flatShading:true});
+  const shell=new T.MeshStandardMaterial({color:0xc5c8c4,roughness:.3,metalness:.76,flatShading:true});
+  const trim=new T.MeshStandardMaterial({color:0x171d20,roughness:.54,metalness:.42,flatShading:true});
+  const glass=new T.MeshStandardMaterial({color:0x111a20,roughness:.22,metalness:.58,flatShading:true});
   const light=new T.MeshStandardMaterial({color:0xc8fff1,emissive:0x73d6bc,emissiveIntensity:.8});
   const box=(size:number[],position:number[],material:T.Material)=>{const mesh=new T.Mesh(new T.BoxGeometry(...size as [number,number,number]),material);mesh.position.fromArray(position);vehicle.add(mesh);return mesh;};
   const panel=(points:number[][],material:T.Material)=>{
@@ -93,35 +93,34 @@ function buildGroundVehicle(){
     const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();
     const faceMaterial=material.clone();faceMaterial.side=T.DoubleSide;const mesh=new T.Mesh(geometry,faceMaterial);vehicle.add(mesh);return mesh;
   };
-  const base=[[-1.05,.55,-2.5],[1.05,.55,-2.5],[1.18,.55,2.35],[-1.18,.55,2.35]];
-  panel(base,trim);
-  box([2.18,.3,4.85],[0,.66,0],trim);
-  // The wedge shaped stainless shell and steep windshield give the truck its distinct profile.
-  panel([[-.98,.82,-2.48],[.98,.82,-2.48],[1.06,1.02,-1.12],[-1.06,1.02,-1.12]],shell);
-  panel([[-.98,.56,-2.48],[.98,.56,-2.48],[.98,.82,-2.48],[-.98,.82,-2.48]],shell);
-  panel([[-1.06,1.02,-1.12],[1.06,1.02,-1.12],[.78,1.86,-.32],[-.78,1.86,-.32]],glass);
-  panel([[-.78,1.86,-.32],[.78,1.86,-.32],[.78,1.86,.52],[-.78,1.86,.52]],shell);
-  panel([[-.78,1.86,.52],[.78,1.86,.52],[1.06,1.04,1.22],[-1.06,1.04,1.22]],glass);
+  panel([[-1.02,.55,-2.48],[1.02,.55,-2.48],[1.13,.55,2.38],[-1.13,.55,2.38]],trim);
+  box([2.12,.28,4.78],[0,.64,-.02],trim);
+  // Continuous low-poly wedge profile: short nose, triangular cabin and open rear bed.
+  panel([[-1.02,.74,-2.48],[1.02,.74,-2.48],[1.08,1.02,-1.05],[-1.08,1.02,-1.05]],shell);
+  panel([[-1.08,1.02,-1.05],[1.08,1.02,-1.05],[.76,1.82,-.22],[-.76,1.82,-.22]],glass);
+  panel([[-.76,1.82,-.22],[.76,1.82,-.22],[.76,1.82,.48],[-.76,1.82,.48]],shell);
+  panel([[-.76,1.82,.48],[.76,1.82,.48],[1.08,1.02,1.25],[-1.08,1.02,1.25]],glass);
   for(const side of [-1,1]){
-    panel([[side*1.12,.62,-1.42],[side*1.12,.62,1.58],[side*1.06,1.04,1.22],[side*1.06,1.04,-1.12]],shell);
-    panel([[side*1.06,1.04,-1.12],[side*1.06,1.04,1.22],[side*.78,1.84,.52],[side*.78,1.84,-.32]],glass);
-    panel([[side*1.12,.62,1.55],[side*1.12,.62,2.28],[side*1.02,1.02,2.28],[side*1.06,1.04,1.22]],shell);
-    box([.16,.12,1.45],[side*1.08,1.13,1.86],shell);
-    const arch=new T.Mesh(new T.TorusGeometry(.62,.13,4,9,Math.PI),trim);arch.rotation.set(Math.PI/2,Math.PI/2,0);arch.position.set(side*1.05,.55,-1.42);vehicle.add(arch);
+    panel([[side*1.08,.62,-2.2],[side*1.08,.62,-1.05],[side*1.08,1.02,-1.05],[side*1.08,.76,-2.48]],shell);
+    panel([[side*1.08,1.02,-1.05],[side*.76,1.82,-.22],[side*.76,1.82,.48],[side*1.08,1.02,1.25]],glass);
+    panel([[side*1.08,.62,-1.05],[side*1.08,.62,1.25],[side*1.08,1.02,1.25],[side*1.08,1.02,-1.05]],shell);
+    panel([[side*1.08,.62,1.25],[side*1.08,.62,2.32],[side*1.08,.94,2.32],[side*1.08,1.02,1.25]],shell);
+    box([.12,.08,1.08],[side*1.08,.98,1.79],shell);
+    const arch=new T.Mesh(new T.TorusGeometry(.6,.12,5,12,Math.PI),trim);arch.rotation.y=Math.PI/2;arch.position.set(side*1.1,.52,-1.42);vehicle.add(arch);
     const rearArch=arch.clone();rearArch.position.z=1.42;vehicle.add(rearArch);
   }
-  // Open cargo bed with low angular rails and a faceted tailgate.
-  box([1.7,.08,1.18],[0,.84,1.72],trim);
-  panel([[-1.1,.62,2.28],[1.1,.62,2.28],[1.1,1.02,2.28],[-1.1,1.02,2.28]],shell);
-  box([.08,.12,1.36],[-1.08,1.08,1.78],shell);box([.08,.12,1.36],[1.08,1.08,1.78],shell);
-  box([1.5,.075,.06],[0,1.87,.1],shell);
+  // Recessed bed, sharp low rails and faceted tailgate.
+  box([1.86,.075,1.04],[0,.8,1.79],trim);
+  panel([[-1.08,.62,2.32],[1.08,.62,2.32],[1.08,.94,2.32],[-1.08,.94,2.32]],shell);
+  box([.09,.08,1.02],[-1.08,.98,1.78],shell);box([.09,.08,1.02],[1.08,.98,1.78],shell);
+  box([1.5,.05,.055],[0,1.84,.12],shell);
   box([1.42,.075,.055],[0,.91,-2.5],light);
-  box([1.72,.14,.12],[0,.72,2.38],trim);
+  box([1.72,.12,.1],[0,.72,2.4],trim);
   for(const side of [-1,1]){
-    box([.32,.16,.08],[side*.68,.78,-2.49],light);
+    box([.3,.12,.06],[side*.7,.79,-2.49],light);
     for(const z of [-1.42,1.42]){
-      const wheel=new T.Mesh(new T.CylinderGeometry(.55,.55,.38,8),trim);wheel.rotation.z=Math.PI/2;wheel.position.set(side*1.12,.52,z);vehicle.add(wheel);
-      const hub=new T.Mesh(new T.CylinderGeometry(.2,.2,.4,8),shell);hub.rotation.z=Math.PI/2;hub.position.set(side*1.12,.52,z);vehicle.add(hub);
+      const wheel=new T.Mesh(new T.CylinderGeometry(.54,.54,.4,10),trim);wheel.rotation.z=Math.PI/2;wheel.position.set(side*1.12,.52,z);vehicle.add(wheel);
+      const hub=new T.Mesh(new T.CylinderGeometry(.22,.22,.42,8),shell);hub.rotation.z=Math.PI/2;hub.position.set(side*1.12,.52,z);vehicle.add(hub);
     }
   }
   vehicle.scale.setScalar(1.35);
@@ -169,7 +168,7 @@ function initAudio(){
 }
 $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.resume();$('sound').textContent=`声音：${soundEnabled?'开':'关'}`;$('sound').setAttribute('aria-pressed',String(soundEnabled));}catch{notify('此浏览器暂不支持音频');}};
 
-const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw+=x*.003*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+y*.003*settings.viewSensitivity,-.08,.72);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
+const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw-=x*.003*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch-y*.003*settings.viewSensitivity,-.08,.72);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
 function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
   const blocked=needsPortrait(innerWidth,innerHeight,touchLayout());
@@ -266,7 +265,7 @@ $('return-menu').onclick=()=>{
 };
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
 addEventListener('mouseup',()=>drag=false);
-addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){const dx=T.MathUtils.clamp(e.movementX,-80,80),dy=T.MathUtils.clamp(e.movementY,-80,80);if(expedition.inVehicle){vehicleCameraYaw+=dx*.0018*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+dy*.0018*settings.viewSensitivity,-.08,.72);}else{flight.mouseX+=dx;flight.mouseY+=dy;}}});
+addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){const dx=T.MathUtils.clamp(e.movementX,-80,80),dy=T.MathUtils.clamp(e.movementY,-80,80);if(expedition.inVehicle){vehicleCameraYaw-=dx*.0018*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch-dy*.0018*settings.viewSensitivity,-.08,.72);}else{flight.mouseX+=dx;flight.mouseY+=dy;}}});
 document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement){drag=false;flight.mouseX=0;flight.mouseY=0;}});
 addEventListener('keydown',e=>{
   if(orientationBlocked&&!paused&&e.code==='Tab'){
