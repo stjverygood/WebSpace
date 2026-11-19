@@ -126,7 +126,7 @@ export class Walker {
       if(offset.length()<obstacle.radius+.34){blocked=true;break;}
     }
     if(shipPosition){const offset=candidate.clone().sub(shipPosition);offset.addScaledVector(radial,-offset.dot(radial));if(offset.length()<3.7&&aboveGround<4)blocked=true;}
-    if(vehiclePosition){const offset=candidate.clone().sub(vehiclePosition);offset.addScaledVector(radial,-offset.dot(radial));if(offset.length()<2.5&&aboveGround<2.2)blocked=true;}
+    if(vehiclePosition){const offset=candidate.clone().sub(vehiclePosition);offset.addScaledVector(radial,-offset.dot(radial));if(offset.length()<3.4&&aboveGround<2.5)blocked=true;}
     if(blocked){
       const previousNormal=this.normal;const oldGround=groundRadius(this.body,previousNormal)+.04;
       this.position.copy(this.body.center).addScaledVector(previousNormal,oldGround+Math.max(0,aboveGround));this.velocity.set(0,0,0);
@@ -194,7 +194,7 @@ export class Expedition {
     if(this.inVehicle){
       const vehicle=this.vehicle,n=vehicle.normal;
       const right=new T.Vector3().crossVectors(vehicle.forward,n).normalize();
-      const exitPoint=vehicle.position.clone().addScaledVector(right,2.8);
+      const exitPoint=vehicle.position.clone().addScaledVector(right,5.6);
       this.walker.spawn(vehicle.body,exitPoint,vehicle.forward);this.inVehicle=false;this.onFoot=true;
       this.flight.keys.clear();this.onNotice('已下车');return;
     }

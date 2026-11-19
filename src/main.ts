@@ -32,7 +32,7 @@ const scene=new T.Scene();scene.background=new T.Color(0x050b13);
 const camera=new T.PerspectiveCamera(53,innerWidth/innerHeight,.15,18000);
 const expedition=new Expedition();
 const flight=expedition.flight;
-let active=false,paused=false,drag=false,uiTime=0,noticeTimer=0,lastControlState='';
+let active=false,paused=false,drag=false,uiTime=0,noticeTimer=0,lastControlState='',vehicleCameraYaw=0,vehicleCameraPitch=.12;
 let orientationBlocked=needsPortrait(innerWidth,innerHeight,touchLayout());
 let fullscreenTransition=false;
 let clockTime=0,last=performance.now();
@@ -100,6 +100,7 @@ function buildGroundVehicle(){
     }
   }
   const roof=box([1.55,.12,1.45],[0,1.89,-.32],shell);roof.rotation.x=-.04;
+  vehicle.scale.setScalar(1.35);
   return vehicle;
 }
 function buildShip(){
@@ -144,7 +145,7 @@ function initAudio(){
 }
 $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.resume();$('sound').textContent=`声音：${soundEnabled?'开':'关'}`;$('sound').setAttribute('aria-pressed',String(soundEnabled));}catch{notify('此浏览器暂不支持音频');}};
 
-const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
+const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw+=x*.003*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+y*.003*settings.viewSensitivity,-.08,.72);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
 function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
   const blocked=needsPortrait(innerWidth,innerHeight,touchLayout());
@@ -241,7 +242,7 @@ $('return-menu').onclick=()=>{
 };
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
 addEventListener('mouseup',()=>drag=false);
-addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){flight.mouseX+=T.MathUtils.clamp(e.movementX,-80,80);flight.mouseY+=T.MathUtils.clamp(e.movementY,-80,80);}});
+addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){const dx=T.MathUtils.clamp(e.movementX,-80,80),dy=T.MathUtils.clamp(e.movementY,-80,80);if(expedition.inVehicle){vehicleCameraYaw+=dx*.0018*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+dy*.0018*settings.viewSensitivity,-.08,.72);}else{flight.mouseX+=dx;flight.mouseY+=dy;}}});
 document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement){drag=false;flight.mouseX=0;flight.mouseY=0;}});
 addEventListener('keydown',e=>{
   if(orientationBlocked&&!paused&&e.code==='Tab'){
@@ -285,7 +286,7 @@ function frame(now:number){
   }}
   const onFoot=expedition.onFoot,inVehicle=expedition.inVehicle,walker=expedition.walker,groundVehicle=expedition.vehicle;
   const controlState=onFoot?'foot':inVehicle?'vehicle':'ship';
-  if(lastControlState!==controlState){keyboardKeys.clear();mobile.reset();flight.keys.clear();lastControlState=controlState;}
+  if(lastControlState!==controlState){keyboardKeys.clear();mobile.reset();flight.keys.clear();if(controlState==='vehicle'){vehicleCameraYaw=0;vehicleCameraPitch=.12;}flight.mouseX=0;flight.mouseY=0;lastControlState=controlState;}
   const local=onFoot?{...nearest(walker.position),altitude:walker.altitude}:inVehicle?{body:groundVehicle.body,normal:groundVehicle.normal,altitude:groundVehicle.position.distanceTo(groundVehicle.body.center)-groundRadius(groundVehicle.body,groundVehicle.normal)}:flight.local;
   const near=T.MathUtils.clamp(1-local.altitude/110,0,1);
   document.body.classList.toggle('on-foot',onFoot);
@@ -321,7 +322,8 @@ function frame(now:number){
   }else if(inVehicle){
     desiredLook.copy(groundVehicle.position).addScaledVector(cameraUp,1.35);
     const vehicleCameraDistance=settings.cameraDistance*.72;
-    desiredCamera.copy(desiredLook).addScaledVector(groundVehicle.forward,-vehicleCameraDistance*Math.cos(.12)).addScaledVector(cameraUp,vehicleCameraDistance*Math.sin(.12));
+    const vehicleCameraOffset=groundVehicle.forward.clone().multiplyScalar(-vehicleCameraDistance*Math.cos(vehicleCameraPitch)).addScaledVector(cameraUp,vehicleCameraDistance*Math.sin(vehicleCameraPitch)).applyAxisAngle(cameraUp,vehicleCameraYaw);
+    desiredCamera.copy(desiredLook).add(vehicleCameraOffset);
   }
   cameraPosition.copy(desiredCamera);
   // A chase camera must remain above terrain even when the player flies towards it.
@@ -363,6 +365,7 @@ function frame(now:number){
     $('landing-prompt').classList.toggle('hidden',!canLand||!onFoot&&(flight.mode==='landing'||flight.mode==='takeoff'));
     $('landing-text').textContent=onFoot?expedition.canBoardVehicle?'上车':'登上飞船':inVehicle?'下车':flight.mode==='landed'?'离开飞船 · 地表探索':'降落并下船';
     $('touch-action').textContent=onFoot?expedition.canBoardVehicle?'上车':'登船':inVehicle?'下车':'下船';
+    $('touch-action').classList.toggle('hidden',!inVehicle&&(onFoot?!(expedition.canBoard||expedition.canBoardVehicle):!canLand));
     $<HTMLButtonElement>('touch-action').disabled=onFoot?!(expedition.canBoard||expedition.canBoardVehicle):inVehicle?false:!canLand||flight.mode==='landing'||flight.mode==='takeoff';
     $('touch-launch').classList.toggle('hidden',onFoot||inVehicle||flight.mode!=='landed');
     $('takeoff-prompt').classList.toggle('hidden',!active||onFoot||inVehicle||flight.mode!=='landed');
