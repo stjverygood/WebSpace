@@ -66,17 +66,32 @@ for(let i=0;i<1500;i++){
 const dustGeo=new T.BufferGeometry();dustGeo.setAttribute('position',new T.Float32BufferAttribute(dustPositions,3));dustGeo.setAttribute('color',new T.Float32BufferAttribute(dustColors,3));
 scene.add(new T.Points(dustGeo,new T.PointsMaterial({size:13,vertexColors:true,transparent:true,opacity:.4,depthWrite:false})));
 scene.add(new T.HemisphereLight(0xbed5dd,0x24373e,1.25));
-const sunlight=new T.PointLight(0xff3b36,24000000,14000,2);sunlight.position.set(0,0,0);scene.add(sunlight);
+const sunlight=new T.PointLight(0xffcf75,21000000,14000,2);sunlight.position.set(0,0,0);scene.add(sunlight);
 const fill=new T.DirectionalLight(0x78bed2,.7);fill.position.set(1200,200,100);scene.add(fill);
 for(const p of planets)scene.add(createPlanet(p));
 
 const sunPosition=new T.Vector3(0,0,0);
-const sun=new T.Mesh(new T.SphereGeometry(560,32,24),new T.MeshBasicMaterial({color:0xff302f}));sun.position.copy(sunPosition);scene.add(sun);
+const sunGeometry=new T.IcosahedronGeometry(560,3),sunVertices=sunGeometry.getAttribute('position'),sunColors:number[]=[];
+const sunPalette=[0xe97832,0xffa43c,0xffc451,0xffdd70,0xffefaa].map(color=>new T.Color(color));
+const sunField=(x:number,y:number,z:number)=>{
+  const broad=Math.sin(x*7.4+z*3.1)*Math.cos(y*8.6-x*2.3);
+  const granule=Math.sin(x*19+y*15+Math.sin(z*7))*Math.cos(z*17-y*5);
+  const current=Math.sin((x+z)*12+Math.sin(y*8))*Math.cos((x-y)*9);
+  return .5+broad*.2+granule*.17+current*.13;
+};
+for(let i=0;i<sunVertices.count;i+=3){
+  const dirs:T.Vector3[]=[];let field=0;
+  for(let j=0;j<3;j++){const d=new T.Vector3().fromBufferAttribute(sunVertices,i+j).normalize();dirs.push(d);field+=sunField(d.x,d.y,d.z)/3;}
+  const color=sunPalette[T.MathUtils.clamp(Math.floor(field*5),0,4)].clone().multiplyScalar(.94+field*.12);
+  for(const d of dirs){const roughness=sunField(d.x,d.y,d.z);d.multiplyScalar(560*(.985+roughness*.032));sunVertices.setXYZ(i+dirs.indexOf(d),d.x,d.y,d.z);sunColors.push(color.r,color.g,color.b);}
+}
+sunGeometry.setAttribute('color',new T.Float32BufferAttribute(sunColors,3));sunGeometry.computeVertexNormals();
+const sun=new T.Mesh(sunGeometry,new T.MeshBasicMaterial({vertexColors:true,toneMapped:false}));sun.position.copy(sunPosition);scene.add(sun);
 sun.name='太阳';
 const glowCanvas=document.createElement('canvas');glowCanvas.width=128;glowCanvas.height=128;
 const ctx=glowCanvas.getContext('2d')!;const gradient=ctx.createRadialGradient(64,64,0,64,64,64);
-gradient.addColorStop(0,'rgba(255,120,110,.82)');gradient.addColorStop(.08,'rgba(255,60,56,.58)');gradient.addColorStop(.3,'rgba(236,38,48,.2)');gradient.addColorStop(1,'rgba(210,24,38,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
-const glow=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(glowCanvas),color:0xff574e,transparent:true,depthWrite:false,blending:T.AdditiveBlending}));glow.position.copy(sunPosition);glow.scale.set(2600,2600,1);scene.add(glow);
+gradient.addColorStop(0,'rgba(255,242,184,.48)');gradient.addColorStop(.08,'rgba(255,211,112,.34)');gradient.addColorStop(.3,'rgba(255,166,63,.12)');gradient.addColorStop(1,'rgba(238,129,47,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
+const glow=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(glowCanvas),color:0xffd477,transparent:true,depthWrite:false,blending:T.AdditiveBlending}));glow.position.copy(sunPosition);glow.scale.set(2300,2300,1);scene.add(glow);
 
 // One instanced draw call for the entire asteroid field.
 const rocks=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),new T.MeshStandardMaterial({color:0x7b7972,roughness:1,flatShading:true}),190);
