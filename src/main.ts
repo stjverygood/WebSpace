@@ -10,9 +10,9 @@ import './landscape.css';
 
 const $=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
 const canvas=$<HTMLCanvasElement>('universe');
-type GameSettings={joystickSensitivity:number;cameraDistance:number;viewSensitivity:number};
+type GameSettings={joystickSensitivity:number;cameraDistance:number;viewSensitivity:number;universeSpeed:number};
 const CAMERA_DISTANCE_MIN=4,CAMERA_DISTANCE_MAX=32;
-const DEFAULT_SETTINGS:GameSettings={joystickSensitivity:1,cameraDistance:16.5,viewSensitivity:1};
+const DEFAULT_SETTINGS:GameSettings={joystickSensitivity:1,cameraDistance:16.5,viewSensitivity:1,universeSpeed:1};
 const INTERACTION_ICONS={
   vehicle:'<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 14 1.5-4.6A2 2 0 0 1 7.4 8h9.2a2 2 0 0 1 1.9 1.4L20 14v5h-3v-2H7v2H4zM4 14h16M8 19v1m8-1v1"/><circle cx="8" cy="14" r="1"/><circle cx="16" cy="14" r="1"/></svg>',
   ship:'<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 6.5 20l5.5-3 5.5 3L12 3Z"/><path d="M9.5 11h5M8 16h8"/></svg>',
@@ -21,7 +21,7 @@ const INTERACTION_ICONS={
 };
 function storedValue(value:unknown,min:number,max:number,fallback:number){const n=Number(value);return Number.isFinite(n)?T.MathUtils.clamp(n,min,max):fallback;}
 function loadSettings():GameSettings{
-  try{const saved=JSON.parse(localStorage.getItem('astral-settings')||'{}') as Partial<GameSettings>;const oldDefault=Number(saved.cameraDistance)===10.5;return{joystickSensitivity:storedValue(saved.joystickSensitivity,.25,2.5,DEFAULT_SETTINGS.joystickSensitivity),cameraDistance:oldDefault?DEFAULT_SETTINGS.cameraDistance:storedValue(saved.cameraDistance,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX,DEFAULT_SETTINGS.cameraDistance),viewSensitivity:storedValue(saved.viewSensitivity,.25,2.5,DEFAULT_SETTINGS.viewSensitivity)};}
+  try{const saved=JSON.parse(localStorage.getItem('astral-settings')||'{}') as Partial<GameSettings>;const oldDefault=Number(saved.cameraDistance)===10.5;return{joystickSensitivity:storedValue(saved.joystickSensitivity,.25,2.5,DEFAULT_SETTINGS.joystickSensitivity),cameraDistance:oldDefault?DEFAULT_SETTINGS.cameraDistance:storedValue(saved.cameraDistance,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX,DEFAULT_SETTINGS.cameraDistance),viewSensitivity:storedValue(saved.viewSensitivity,.25,2.5,DEFAULT_SETTINGS.viewSensitivity),universeSpeed:storedValue(saved.universeSpeed,0,5,DEFAULT_SETTINGS.universeSpeed)};}
   catch{return{...DEFAULT_SETTINGS};}
 }
 const settings=loadSettings();
@@ -248,6 +248,7 @@ function setupSettings(){
   const controls:[string,string,keyof GameSettings,string][]=[
     ['setting-joystick','setting-joystick-value','joystickSensitivity','×'],
     ['setting-view','setting-view-value','viewSensitivity','×'],
+    ['setting-universe-speed','setting-universe-speed-value','universeSpeed','×'],
   ];
   for(const [id,outputId,key,unit] of controls){
     const input=$<HTMLInputElement>(id),output=$<HTMLOutputElement>(outputId);
@@ -324,7 +325,7 @@ camera.position.copy(flight.position).add(new T.Vector3(0,7,24));
 function frame(now:number){
   const dt=Math.min((now-last)/1000,.04);last=now;
   if(!paused&&!orientationBlocked){clockTime+=dt;if(active){
-    tickPlanetClock(dt);
+    tickPlanetClock(dt,settings.universeSpeed);
     for(const body of planets){
       const delta=planetRotationDelta(body),centerVelocity=planetVelocity(body,dt);
       if(expedition.walker.body===body&&(expedition.onFoot||expedition.inVehicle)){
