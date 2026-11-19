@@ -375,6 +375,31 @@ button {
   margin-bottom: 13px;
   text-shadow: 0 1px 7px #000;
 }
+.touch-throttle {
+  display: grid;
+  width: 118px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 8px;
+}
+.touch-throttle button {
+  min-height: 38px;
+  border: 1px solid #b8e6ce30;
+  border-radius: 7px;
+  background: #0b202ad1;
+  color: #c3d9cf;
+  font-size: 10px;
+  backdrop-filter: blur(10px);
+  touch-action: none;
+}
+.touch-throttle button:active,
+.touch-throttle button.pressed {
+  border-color: #b8e6ceaa;
+  background: #b8e6ce33;
+}
+.on-foot .joystick-area .touch-throttle {
+  display: none;
+}
 .joystick {
   position: relative;
   width: 118px;

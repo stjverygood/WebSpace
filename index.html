@@ -42,7 +42,7 @@
     <footer class="hud">
       <div class="telemetry"><div class="telemetry-title">VELOCITY <span>航行速度</span></div><div class="speed-number"><span id="speed">0</span><small>m/s</small><div class="speed-bars" id="speed-bars"></div></div></div>
       <div class="coordinates"><div class="telemetry-title" id="alt-label">FLIGHT LOG <span>航行记录</span></div><strong id="altitude">一切未知，皆可抵达。</strong><div id="coordinates">X 0000 &nbsp; Y 0000 &nbsp; Z 0000</div></div>
-      <div class="bottom-controls"><span><kbd>SHIFT</kbd> <span id="boost-label">加速</span></span><span><kbd>SPACE</kbd> <span id="space-label">制动</span></span><span><kbd>F</kbd> <span id="interact-label">下船</span></span><button id="pause-shortcut"><kbd>ESC</kbd> 暂停</button></div>
+      <div class="bottom-controls"><span><kbd id="boost-key">W</kbd> <span id="boost-label">前进加速</span></span><span><kbd>SPACE</kbd> <span id="space-label">制动</span></span><span><kbd>F</kbd> <span id="interact-label">下船</span></span><button id="pause-shortcut"><kbd>ESC</kbd> 暂停</button></div>
     </footer>
     <div id="pause-overlay" class="modal-backdrop hidden">
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
@@ -56,12 +56,12 @@
           <div class="eyebrow">FLIGHT & FIELD MANUAL</div><h2 id="instructions-title">操作说明</h2>
           <div class="manual-tabs" role="tablist" aria-label="操作平台"><button id="manual-desktop-tab" role="tab" aria-selected="true" aria-controls="manual-desktop">电脑按键</button><button id="manual-mobile-tab" role="tab" aria-selected="false" aria-controls="manual-mobile">手机触屏</button></div>
           <div id="manual-desktop" role="tabpanel" aria-labelledby="manual-desktop-tab">
-            <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>W / S</dt><dd>前进推进 / 反向减速</dd></div><div><dt>A / D</dt><dd>向左 / 向右平移</dd></div><div><dt>鼠标 / 方向键</dt><dd>调整飞船朝向</dd></div><div><dt>Q / E</dt><dd>向左 / 向右翻滚</dd></div><div><dt>Shift + W</dt><dd>巡航加速</dd></div><div><dt>空格</dt><dd>按住制动</dd></div><div><dt>F</dt><dd>靠近地表后降落并下船</dd></div><div><dt>R</dt><dd>登船后起飞</dd></div></dl>
+            <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>W / S</dt><dd>持续前进加速 / 反向推进减速</dd></div><div><dt>A / D</dt><dd>向左 / 向右平移</dd></div><div><dt>鼠标 / 方向键</dt><dd>调整飞船朝向</dd></div><div><dt>Q / E</dt><dd>向左 / 向右翻滚</dd></div><div><dt>空格</dt><dd>按住制动</dd></div><div><dt>F</dt><dd>靠近地表后降落并下船</dd></div><div><dt>R</dt><dd>登船后起飞</dd></div></dl>
             <h3>地表探索</h3><dl class="manual-list"><div><dt>WASD</dt><dd>前后左右行走</dd></div><div><dt>鼠标 / 方向键</dt><dd>转动第三人称视角</dd></div><div><dt>Shift + 移动</dt><dd>奔跑</dd></div><div><dt>空格</dt><dd>跳跃，重力影响跳高与滞空</dd></div><div><dt>F</dt><dd>靠近飞船后登船</dd></div><div><dt>Esc / 右上暂停</dt><dd>暂停 / 继续；说明中返回菜单</dd></div></dl>
             <p class="manual-tip">点击游戏画面锁定鼠标；也可按住鼠标左键拖动转向。驾驶飞船自行寻找星球，附近星球资料会显示在右侧。</p>
           </div>
           <div id="manual-mobile" role="tabpanel" aria-labelledby="manual-mobile-tab" class="hidden">
-            <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>左下摇杆</dt><dd>上推前进，下拉反向减速；左右平移</dd></div><div><dt>滑动右侧画面</dt><dd>调整飞船朝向</dd></div><div><dt>按住「加速」</dt><dd>持续向前加速</dd></div><div><dt>按住「制动」</dt><dd>减速至悬停</dd></div><div><dt>按住「左滚 / 右滚」</dt><dd>向对应方向翻滚</dd></div><div><dt>「下船 / 起飞」</dt><dd>降落并下船 / 登船后起飞</dd></div></dl>
+            <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>左下摇杆</dt><dd>左右转向、上下俯仰</dd></div><div><dt>左侧「后退 / 前进」</dt><dd>按住反向推进 / 持续前进加速</dd></div><div><dt>滑动右侧画面</dt><dd>调整飞船朝向</dd></div><div><dt>按住「制动」</dt><dd>减速至悬停</dd></div><div><dt>按住「左滚 / 右滚」</dt><dd>向对应方向翻滚</dd></div><div><dt>「下船 / 起飞」</dt><dd>降落并下船 / 登船后起飞</dd></div></dl>
             <h3>地表探索</h3><dl class="manual-list"><div><dt>左下摇杆</dt><dd>前后左右行走，松手停止</dd></div><div><dt>滑动右侧画面</dt><dd>转动第三人称视角</dd></div><div><dt>按住「奔跑」+ 摇杆</dt><dd>加快移动</dd></div><div><dt>点击「跳跃」</dt><dd>起跳，落地后可再次跳跃</dd></div><div><dt>点击「登船」</dt><dd>靠近停泊飞船后进入驾驶舱</dd></div><div><dt>右上「暂停」</dt><dd>暂停游戏，进入菜单</dd></div></dl>
             <p class="manual-tip">横屏游玩，按 16:9 设计并适配更宽屏幕。左手移动，右手转向或点击动作按钮，可同时操作。点击「全屏」可尝试隐藏浏览器工具栏并锁定横屏；不支持时，开启手机自动旋转后手动横置即可。退出全屏会自动暂停。</p>
           </div>
@@ -70,9 +70,9 @@
       </section>
     </div>
     <div id="touch-controls" class="touch-controls" aria-label="手机游戏控制">
-      <div class="joystick-area"><span id="joystick-label">推进 / 平移</span><div id="joystick" class="joystick" role="group" aria-label="虚拟移动摇杆"><span class="joystick-axis">＋</span><div id="joystick-thumb" class="joystick-thumb"></div></div></div>
+      <div class="joystick-area"><span id="joystick-label">机身方向</span><div class="touch-throttle ship-only"><button id="touch-reverse" aria-label="后退推进">后退</button><button id="touch-forward" aria-label="前进加速">前进</button></div><div id="joystick" class="joystick" role="group" aria-label="虚拟方向摇杆"><span class="joystick-axis">＋</span><div id="joystick-thumb" class="joystick-thumb"></div></div></div>
       <div class="look-hint">滑动右侧 · 调整视角</div>
-      <div class="touch-actions"><button id="touch-roll-left" class="ship-only touch-small" aria-label="向左翻滚">左滚</button><button id="touch-roll-right" class="ship-only touch-small" aria-label="向右翻滚">右滚</button><button id="touch-boost">加速</button><button id="touch-brake" class="ship-only">制动</button><button id="touch-jump" class="foot-only">跳跃</button><button id="touch-action" class="touch-accent">下船</button><button id="touch-launch" class="hidden">起飞</button></div>
+      <div class="touch-actions"><button id="touch-roll-left" class="ship-only touch-small" aria-label="向左翻滚">左滚</button><button id="touch-roll-right" class="ship-only touch-small" aria-label="向右翻滚">右滚</button><button id="touch-boost" class="foot-only">奔跑</button><button id="touch-brake" class="ship-only">制动</button><button id="touch-jump" class="foot-only">跳跃</button><button id="touch-action" class="touch-accent">下船</button><button id="touch-launch" class="hidden">起飞</button></div>
     </div>
     <div id="rotate-overlay" class="rotate-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rotate-title">
       <div class="rotate-card"><div class="eyebrow">A WIDER HORIZON</div><div class="rotate-illustration" aria-hidden="true"><span class="rotate-phone"></span><span class="rotate-arrow">↻</span></div><h2 id="rotate-title">把手机横过来。</h2><p>更宽的星海，留给双手探索。</p><button id="rotate-fullscreen" class="primary">尝试全屏横屏 <span>⛶</span></button><p id="rotate-note" class="rotate-note" role="status">请开启手机自动旋转，横置后即可游玩。<br>浏览器不支持方向锁定时，可手动旋转手机。</p><button id="rotate-menu" class="reset-button">菜单与操作说明</button></div>

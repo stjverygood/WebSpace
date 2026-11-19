@@ -59,9 +59,9 @@ export class MobileControls {
       canvas.addEventListener(event, (e) =>
         this.lookPointers.delete((e as PointerEvent).pointerId),
       );
-    this.hold("touch-boost", () =>
-      actions.onFoot() ? ["ShiftLeft"] : ["ShiftLeft", "KeyW"],
-    );
+    this.hold("touch-boost", () => actions.onFoot() ? ["ShiftLeft"] : []);
+    this.hold("touch-reverse", () => actions.onFoot() ? [] : ["KeyS"]);
+    this.hold("touch-forward", () => actions.onFoot() ? [] : ["KeyW"]);
     this.hold("touch-brake", () => ["Space"]);
     this.hold("touch-roll-left", () => ["KeyQ"]);
     this.hold("touch-roll-right", () => ["KeyE"]);
@@ -92,10 +92,17 @@ export class MobileControls {
     }
     this.thumb.style.transform = `translate(${x * radius}px,${y * radius}px)`;
     const keys = new Set<string>();
-    if (x > 0.25) keys.add("KeyD");
-    if (x < -0.25) keys.add("KeyA");
-    if (y < -0.25) keys.add("KeyW");
-    if (y > 0.25) keys.add("KeyS");
+    if (this.actions.onFoot()) {
+      if (x > 0.25) keys.add("KeyD");
+      if (x < -0.25) keys.add("KeyA");
+      if (y < -0.25) keys.add("KeyW");
+      if (y > 0.25) keys.add("KeyS");
+    } else {
+      if (x < -0.25) keys.add("ArrowLeft");
+      if (x > 0.25) keys.add("ArrowRight");
+      if (y < -0.25) keys.add("ArrowUp");
+      if (y > 0.25) keys.add("ArrowDown");
+    }
     this.sources.set(e.pointerId, keys);
   }
   private hold(id: string, keys: () => string[]) {

@@ -253,10 +253,10 @@ function frame(now:number){
   }
   ship.position.copy(flight.position);ship.quaternion.copy(flight.rotation);
   if(!active){ship.position.y+=Math.sin(clockTime*.65)*.45;ship.rotateZ(Math.sin(clockTime*.3)*.025);}
-  const boosting=flight.keys.has('ShiftLeft')&&flight.keys.has('KeyW');
+  const boosting=flight.keys.has('KeyW');
   for(let i=0;i<engines.length;i++){const engine=engines[i];engine.scale.y=(flight.mode==='landed'?.05:boosting?2.4:.45+flight.speed/130)*(1+Math.sin(clockTime*35+i)*.07);engine.visible=flight.mode!=='landed';}
-  const desiredCamera=new T.Vector3(0,active?5.2:6.5,active?21+Math.min(flight.speed/50,5):23).applyQuaternion(flight.rotation).add(ship.position);
-  const desiredLook=new T.Vector3(active?0:3.5,active?1:2.3,active&&local.altitude<25?-12:-28).applyQuaternion(flight.rotation).add(ship.position);
+  const desiredCamera=new T.Vector3(0,active?4.3:6.5,active?10.5+Math.min(flight.speed/170,1.5):23).applyQuaternion(flight.rotation).add(ship.position);
+  const desiredLook=new T.Vector3(active?0:3.5,active?1:2.3,active?(local.altitude<25?-6:-9):-28).applyQuaternion(flight.rotation).add(ship.position);
   const cameraUp=onFoot?walker.normal:new T.Vector3(0,1,0).applyQuaternion(flight.rotation);
   if(onFoot){
     desiredLook.copy(walker.position).addScaledVector(cameraUp,1.25);
@@ -266,9 +266,9 @@ function frame(now:number){
   // A chase camera must remain above terrain even when the player flies towards it.
   for(const p of planets){const radial=cameraPosition.clone().sub(p.center);const direction=radial.clone().normalize();const safe=(onFoot?groundRadius(p,direction):surfaceRadius(p,direction))+(onFoot?.65:4);if(radial.length()<safe)cameraPosition.copy(p.center).addScaledVector(direction,safe);}
   const speedResponse=Math.min(flight.speed/80,1);
-  const positionFollow=onFoot?8:9+speedResponse*6;
-  const lookFollow=onFoot?9:11+speedResponse*6;
-  const upFollow=onFoot?6:9+speedResponse*3;
+  const positionFollow=onFoot?8:14+speedResponse*4;
+  const lookFollow=onFoot?9:16+speedResponse*2;
+  const upFollow=onFoot?6:11+speedResponse*2;
   if(!paused&&!orientationBlocked){camera.position.lerp(cameraPosition,1-Math.exp(-dt*positionFollow));cameraLook.lerp(desiredLook,1-Math.exp(-dt*lookFollow));worldUp.lerp(cameraUp,1-Math.exp(-dt*upFollow));}
   // Clamp the interpolated camera too, so entering a hillside never clips through it.
   if(onFoot){const radial=camera.position.clone().sub(walker.body.center);const direction=radial.clone().normalize();const safe=groundRadius(walker.body,direction)+.65;if(radial.length()<safe)camera.position.copy(walker.body.center).addScaledVector(direction,safe);}
@@ -305,11 +305,11 @@ function frame(now:number){
     if(onFoot){const toShip=flight.position.clone().sub(walker.position);const right=new T.Vector3().crossVectors(walker.forward,walker.normal);$('ship-bearing').style.transform=`rotate(${Math.atan2(toShip.dot(right),toShip.dot(walker.forward))*180/Math.PI}deg)`;}
     $('ship-distance').textContent=`${expedition.shipDistance.toFixed(0)} m`;
     $('surface-state').textContent=walker.grounded?'靴下是一个新的世界。':`离地 ${Math.max(0,walker.altitude-.04).toFixed(1)} m`;
-    $('boost-label').textContent=onFoot?'奔跑':'加速';$('space-label').textContent=onFoot?'跳跃':'制动';$('interact-label').textContent=onFoot?'登船':'下船';
+    $('boost-key').textContent=onFoot?'SHIFT':'W';$('boost-label').textContent=onFoot?'奔跑':'前进加速';$('space-label').textContent=onFoot?'跳跃':'制动';$('interact-label').textContent=onFoot?'登船':'下船';
     const canLand=active&&(onFoot?expedition.canBoard:(local.altitude<90&&flight.speed<20||flight.mode==='landed'));
     $('landing-prompt').classList.toggle('hidden',!canLand||!onFoot&&(flight.mode==='landing'||flight.mode==='takeoff'));
     $('landing-text').textContent=onFoot?'登上飞船':flight.mode==='landed'?'离开飞船 · 地表探索':'降落并下船';
-    $('touch-boost').textContent=onFoot?'奔跑':'加速';$('joystick-label').textContent=onFoot?'移动':'推进 / 平移';
+    $('touch-boost').textContent='奔跑';$('joystick-label').textContent=onFoot?'移动':'机身方向';
     $('touch-action').textContent=onFoot?'登船':'下船';
     $<HTMLButtonElement>('touch-action').disabled=onFoot?!expedition.canBoard:!canLand||flight.mode==='landing'||flight.mode==='takeoff';
     $('touch-launch').classList.toggle('hidden',onFoot||flight.mode!=='landed');

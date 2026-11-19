@@ -63,12 +63,11 @@ export class Flight {
     this.rotation.multiply(new T.Quaternion().setFromAxisAngle(Z,(key('KeyQ')-key('KeyE'))*dt*1.1));
     this.rotation.normalize();
     const proximity=this.local;
-    const boost=key('ShiftLeft')||key('ShiftRight');
-    const acceleration=boost?90:28;
+    const acceleration=90;
     const direction=new T.Vector3(key('KeyD')-key('KeyA'),0,-key('KeyW')+key('KeyS')*.55).applyQuaternion(this.rotation);
     this.velocity.addScaledVector(direction,acceleration*dt);
     this.velocity.multiplyScalar(Math.exp(-dt*(key('Space')?3.5:.13)));
-    const speedLimit=proximity.altitude<70?35:proximity.altitude<180?80:boost?260:90;
+    const speedLimit=proximity.altitude<70?35:proximity.altitude<180?80:260;
     if(this.speed>speedLimit)this.velocity.multiplyScalar(Math.max(speedLimit/this.speed,Math.exp(-dt*2)));
     this.position.addScaledVector(this.velocity,dt);
     this.mouseX=0;this.mouseY=0;
