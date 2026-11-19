@@ -36,7 +36,7 @@ export function nearest(position: T.Vector3) {
 const groundMeshes=new Map<Planet,T.Mesh>();
 interface PlanetMotion { group:T.Group; baseCenter:T.Vector3; initialPhase:number; orbitRadius:number; orbitPeriod:number; spinPeriod:number; spin:T.Quaternion; previousCenter:T.Vector3; previousSpin:T.Quaternion; obstacleLocal:T.Vector3[] }
 const motions=new Map<Planet,PlanetMotion>();
-export interface SurfaceObstacle { position:T.Vector3; radius:number; height:number; vehicleBlocking?:boolean }
+export interface SurfaceObstacle { position:T.Vector3; radius:number; height:number; vehicleBlocking?:boolean; parkedVehicle?:T.Group }
 const obstacles=new Map<Planet,SurfaceObstacle[]>();
 const groundRay=new T.Raycaster();
 // Match the actual flat triangles under the astronaut's feet, not the smooth
@@ -50,7 +50,10 @@ export function groundRadius(p:Planet,normal:T.Vector3):number {
   const hit=groundRay.intersectObject(mesh,false)[0];
   return hit?hit.point.distanceTo(p.center):surfaceRadius(p,normal);
 }
-export function surfaceObstacles(p:Planet):readonly SurfaceObstacle[]{return obstacles.get(p)??[];}
+export function surfaceObstacles(p:Planet):readonly SurfaceObstacle[]{return (obstacles.get(p)??[]).filter(item=>!item.parkedVehicle||item.parkedVehicle.visible);}
+export function nearbyParkedVehicle(p:Planet,position:T.Vector3,distance:number){
+  return (obstacles.get(p)??[]).filter(item=>item.parkedVehicle?.visible).sort((a,b)=>a.position.distanceToSquared(position)-b.position.distanceToSquared(position)).find(item=>item.position.distanceTo(position)<distance);
+}
 
 export function advancePlanetMotion(dt:number){
   for(const [planet,motion] of motions){
@@ -128,7 +131,8 @@ function addSettlement(p:Planet,group:T.Group,colliders:SurfaceObstacle[]){
     const normal=anchor.clone().addScaledVector(east,x/p.radius).addScaledVector(north,z/p.radius).normalize();
     const object=new T.Group();object.position.copy(pointAt(x,z,.18));
     const forward=north.clone().applyAxisAngle(normal,heading);
-    object.quaternion.setFromRotationMatrix(new T.Matrix4().lookAt(new T.Vector3(),forward,normal));group.add(object);return object;
+    const right=new T.Vector3().crossVectors(forward,normal).normalize();
+    object.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(right,normal,forward.clone().negate()));group.add(object);return object;
   };
   const building=(kind:number,x:number,z:number,heading:number)=>{
     const root=place(x,z,heading),model=new T.Group();model.scale.setScalar(scale);root.add(model);
@@ -174,7 +178,7 @@ function addSettlement(p:Planet,group:T.Group,colliders:SurfaceObstacle[]){
       const wheel=new T.Mesh(new T.CylinderGeometry(kind===2?.62:.57,kind===2?.62:.57,.42,8),dark);wheel.rotation.z=Math.PI/2;wheel.position.set(side*1.18,.58,z);model.add(wheel);
       const hub=new T.Mesh(new T.CylinderGeometry(.2,.2,.44,6),steel);hub.rotation.z=Math.PI/2;hub.position.set(side*1.18,.58,z);model.add(hub);
     }
-    colliders.push({position:p.center.clone().add(pointAt(x,z,1.1*scale)),radius:4.3*scale,height:2.5*scale,vehicleBlocking:true});
+    colliders.push({position:p.center.clone().add(pointAt(x,z,1.1*scale)),radius:4.3*scale,height:2.5*scale,vehicleBlocking:true,parkedVehicle:root});
   };
   [
     [0,112,16,.25],[1,125,86,-.12],[2,8,106,.62],[3,168,-18,.36],[4,-48,82,-.3],
