@@ -43,7 +43,6 @@ let orientationBlocked=needsPortrait(innerWidth,innerHeight,touchLayout());
 let fullscreenTransition=false;
 let clockTime=0,last=performance.now();
 function notify(message:string){$('notice').textContent=message;$('notice').classList.add('visible');clearTimeout(noticeTimer);noticeTimer=window.setTimeout(()=>$('notice').classList.remove('visible'),4200);}
-expedition.onNotice=notify;
 
 // A deterministic starfield keeps the composition consistent across restarts.
 let seed=817;
