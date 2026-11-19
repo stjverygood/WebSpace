@@ -4,31 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#070d12" />
-    <title>ASTRAL — 星间漫游</title>
+    <title>星际公民</title>
   </head>
   <body>
     <div id="game-root" hidden>
     <canvas id="universe" aria-label="太空漫游游戏" tabindex="0"></canvas>
     <div class="vignette"></div>
     <header class="topbar">
-      <a class="brand" href="#" id="home" aria-label="暂停"><span class="brand-icon">✳</span> ASTRAL<span class="brand-divider"></span><span class="brand-sub">星间漫游</span></a>
-      <button class="icon-button" id="sound" title="切换声音" aria-label="切换声音">声音 <span id="sound-state">关</span></button>
-      <button class="icon-button fullscreen-control" id="fullscreen-button" title="进入全屏" aria-label="进入全屏"><span class="fullscreen-label">全屏</span><span>⛶</span></button>
       <button class="icon-button pause-control" id="pause-button" title="暂停菜单" aria-label="暂停游戏">暂停 <span>Ⅱ</span></button>
     </header>
-    <main id="intro" class="intro">
-      <div class="eyebrow"><span class="line"></span> A SMALL SHIP. AN ENDLESS SKY.</div>
-      <h1>把日常<br>留在引力之外<span>。</span></h1>
-      <p>驾驶你的飞船，穿过寂静的星海。<br>在一颗陌生行星上，找到属于自己的地平线。</p>
-      <button class="primary" id="start">开始漫游 <span>↗</span></button>
-      <div class="intro-note desktop-note"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> 驾驶飞船 <span class="note-dot">·</span> 鼠标控制视角</div>
-      <div class="intro-note touch-note">横屏漫游 · 左手移动，右手转向<br>操作说明可在暂停菜单中查看</div>
-      <div class="edition">EXPLORATION BUILD <span>01 / 自由探索</span></div>
-    </main>
-    <aside class="planet-card" id="planet-card">
-      <div class="planet-heading"><h2 id="planet-name">苍蓝星</h2></div>
-      <div class="planet-data"><div><label>地表</label><strong id="planet-type">海洋 / 山脉</strong></div><div><label>重力</label><strong class="mint" id="planet-gravity">9.8 m/s²</strong></div></div>
-    </aside>
     <div id="reticle" class="reticle hidden"><div></div><span></span></div>
     <div id="target-marker" class="target-marker hidden"><span>⌖</span><label id="marker-name">苍蓝星</label></div>
     <div id="notice" class="notice" role="status"></div>
@@ -36,8 +20,6 @@
     <button id="landing-prompt" class="landing-prompt hidden"><span class="key">F</span><span id="landing-text">降落并下船</span></button>
     <button id="takeoff-prompt" class="takeoff-prompt hidden"><span class="key">R</span> 启动起飞</button>
     <footer class="hud">
-      <div class="telemetry"><div class="telemetry-title">VELOCITY <span>航行速度</span></div><div class="speed-number"><span id="speed">0</span><small>m/s</small><div class="speed-bars" id="speed-bars"></div></div></div>
-      <div class="coordinates hidden" id="altitude-readout"><strong id="altitude"></strong></div>
       <div class="bottom-controls"><span><kbd id="boost-key">W / S</kbd> <span id="boost-label">推进</span></span><span id="space-control" class="hidden"><kbd>SPACE</kbd> <span id="space-label">跳跃</span></span><span><kbd>F</kbd> <span id="interact-label">下船</span></span><button id="pause-shortcut"><kbd>ESC</kbd> 暂停</button></div>
     </footer>
     <div id="pause-overlay" class="modal-backdrop hidden">
@@ -46,7 +28,7 @@
           <button class="primary" id="resume">继续漫游 <span>↗</span></button>
           <button class="menu-option" id="show-instructions"><span>操作说明<small>电脑按键 / 手机触屏</small></span><span>→</span></button>
           <button class="menu-option" id="show-settings"><span>设置<small>飞船摇杆 / 相机距离 / 视角灵敏度</small></span><span>→</span></button>
-          <button class="reset-button" id="reset">返回出发点</button>
+          <button class="reset-button" id="return-menu">返回开始菜单</button>
         </div>
         <div id="settings-view" class="hidden">
           <button class="back-button" id="settings-back">← 返回暂停菜单</button>
@@ -55,6 +37,7 @@
             <label class="setting-row" for="setting-joystick"><span><b>飞船摇杆灵敏度</b><output id="setting-joystick-value">1.00×</output></span><input id="setting-joystick" type="range" min="0.25" max="2.5" step="0.05" value="1"></label>
             <label class="setting-row" for="setting-distance"><span><b>相机距离</b><output id="setting-distance-value">10.5 m</output></span><input id="setting-distance" type="range" min="6" max="18" step="0.5" value="10.5"></label>
             <label class="setting-row" for="setting-view"><span><b>手机视角灵敏度</b><output id="setting-view-value">1.00×</output></span><input id="setting-view" type="range" min="0.25" max="2.5" step="0.05" value="1"></label>
+            <div class="sound-setting"><span>声音</span><button id="sound" type="button" aria-label="切换声音" aria-pressed="false">声音：关</button></div>
           </div>
           <p class="settings-note">继续游戏后生效，并保存在这台设备的浏览器中。</p>
         </div>
@@ -86,10 +69,8 @@
     <div id="error" class="error hidden"></div>
     </div>
     <main id="launcher" class="launcher">
-      <header class="launch-brand"><span>✳</span> ASTRAL <small>星间漫游</small></header>
-      <div class="launch-orbit" aria-hidden="true"><span></span><i></i></div>
-      <section class="launch-content"><div class="launch-eyebrow">A SMALL SHIP. AN ENDLESS SKY.</div><h1>自由漫游，<br>星海之间。</h1><p>驾驶飞船自由漫游，降落陌生行星。<br>走出驾驶舱，寻找属于自己的地平线。</p><button id="launch-game" class="launch-button">开始游戏 <span>↗</span></button><div id="launch-status" class="launch-status" role="status" aria-live="polite">一艘飞船，三个世界。一段没有目的地的旅程。</div></section>
-      <footer class="launch-footer"><span>EXPLORATION / 01</span><span>电脑 · 手机横屏</span></footer>
+      <header class="launch-brand"><span aria-hidden="true">✳</span><strong>星际公民</strong></header>
+      <button id="launch-game" class="launch-button">开始游戏</button>
     </main>
     <script type="module" src="/src/bootstrap.ts"></script>
   </body>

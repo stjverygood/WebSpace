@@ -20,6 +20,28 @@ button {
   font-size: 14px;
   color: var(--mint);
 }
+.topbar {
+  justify-content: flex-end;
+}
+.sound-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #bdd7c9;
+  font-size: 12px;
+}
+.sound-setting button {
+  min-width: 82px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #a5c6b208;
+  color: var(--mint);
+  font-size: 11px;
+}
+.sound-setting button:hover {
+  background: #a5c6b212;
+}
 .modal-backdrop {
   padding: max(20px, env(safe-area-inset-top)) 16px
     max(20px, env(safe-area-inset-bottom));
