@@ -58,7 +58,9 @@ async function launch(){
     return;
   }
   loading=true;button.disabled=true;button.setAttribute('aria-busy','true');
-  button.innerHTML='载入中 <span class="launch-spinner" aria-hidden="true"></span>';
+  button.classList.add('is-loading');
+  button.setAttribute('aria-live','polite');
+  button.innerHTML='<span class="launch-loading-label">正在加载场景</span><span class="launch-progress" aria-hidden="true"><span></span></span>';
   if(matchMedia('(any-pointer: coarse), (max-width: 700px), (max-width: 1024px) and (max-height: 600px)').matches){
     try{void document.documentElement.requestFullscreen?.({navigationUI:'hide'}).catch(()=>{});}catch{/* Manual portrait play is still available. */}
   }
@@ -74,6 +76,8 @@ async function launch(){
     button.textContent='重新加载';
   }finally{
     loading=false;button.disabled=false;button.removeAttribute('aria-busy');
+    button.classList.remove('is-loading');
+    button.removeAttribute('aria-live');
     if(game)button.textContent='开始游戏';
   }
 }
