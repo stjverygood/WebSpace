@@ -427,18 +427,10 @@ button {
 }
 .joystick-area {
   position: absolute;
-  left: max(18px, env(safe-area-inset-left));
-  bottom: calc(101px + env(safe-area-inset-bottom));
+  inset: 0 auto 0 0;
+  width: 50%;
   pointer-events: auto;
-  text-align: center;
-}
-.joystick-area > span {
-  display: block;
-  font-size: 9px;
-  letter-spacing: 1.5px;
-  color: #a4c1b3;
-  margin-bottom: 13px;
-  text-shadow: 0 1px 7px #000;
+  touch-action: none;
 }
 .touch-right-panel {
   position: absolute;
@@ -476,7 +468,9 @@ button {
   display: none;
 }
 .joystick {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 118px;
   height: 118px;
   border: 1px solid #b8e6ce33;
@@ -486,6 +480,16 @@ button {
   display: grid;
   place-items: center;
   box-shadow: inset 0 0 0 15px #c3e9d405;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -50%) scale(0.9);
+  transition: opacity 100ms ease, transform 100ms ease, visibility 100ms;
+  pointer-events: none;
+}
+.joystick.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
 }
 .joystick-axis {
   position: absolute;
@@ -685,7 +689,6 @@ button {
     width: 250px;
     bottom: 85px;
   }
-  .touch-layout .joystick-area,
   .touch-layout .touch-right-panel {
     bottom: 80px;
   }

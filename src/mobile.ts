@@ -14,24 +14,45 @@ export class MobileControls {
   private joystickPointer: number | null = null;
   private steeringX = 0;
   private steeringY = 0;
+  private stickOrigin = { x: 0, y: 0 };
   private lookPointers = new Map<number, { x: number; y: number }>();
   private pinchDistance: number | null = null;
   private cleanup = new Set<() => void>();
   private stick = document.getElementById("joystick")!;
+  private stickArea = document.getElementById("joystick-area")!;
   private thumb = document.getElementById("joystick-thumb")!;
   private actions: MobileActions;
   constructor(actions: MobileActions) {
     this.actions = actions;
-    this.stick.addEventListener("pointerdown", (e) => {
+    const beginStick = (e: PointerEvent, floating: boolean) => {
       if (!actions.enabled() || this.joystickPointer !== null) return;
       e.preventDefault();
       this.joystickPointer = e.pointerId;
-      this.stick.setPointerCapture(e.pointerId);
+      if (floating) {
+        const area = this.stickArea.getBoundingClientRect();
+        const radius = this.stick.getBoundingClientRect().width / 2;
+        const left = Math.max(radius, Math.min(area.width - radius, e.clientX - area.left));
+        const top = Math.max(radius, Math.min(area.height - radius, e.clientY - area.top));
+        this.stick.style.left = `${left}px`;
+        this.stick.style.top = `${top}px`;
+        this.stickOrigin = { x: area.left + left, y: area.top + top };
+        this.stick.classList.add("visible");
+        this.stickArea.setPointerCapture(e.pointerId);
+      } else {
+        const rect = this.stick.getBoundingClientRect();
+        this.stickOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        this.stick.setPointerCapture(e.pointerId);
+      }
       this.moveStick(e);
-    });
-    this.stick.addEventListener("pointermove", (e) => {
+    };
+    this.stickArea.addEventListener("pointerdown", (e) => beginStick(e, e.target === this.stickArea));
+    // Keep direct interactions on the visible stick centered on its current base.
+    this.stick.addEventListener("pointerdown", (e) => beginStick(e, false));
+    const moveStick = (e: PointerEvent) => {
       if (e.pointerId === this.joystickPointer) this.moveStick(e);
-    });
+    };
+    this.stickArea.addEventListener("pointermove", moveStick);
+    this.stick.addEventListener("pointermove", moveStick);
     const releaseStick = (e: PointerEvent) => {
       if (e.pointerId === this.joystickPointer) {
         this.sources.delete(e.pointerId);
@@ -39,12 +60,12 @@ export class MobileControls {
         this.steeringX = 0;
         this.steeringY = 0;
         this.thumb.style.transform = "translate(0px,0px)";
+        this.stick.classList.remove("visible");
       }
     };
     for (const event of ["pointerup", "pointercancel", "lostpointercapture"])
-      this.stick.addEventListener(event, (e) =>
-        releaseStick(e as PointerEvent),
-      );
+      for (const target of [this.stickArea, this.stick])
+        target.addEventListener(event, (e) => releaseStick(e as PointerEvent));
     const canvas = document.getElementById("universe")!;
     canvas.addEventListener("pointerdown", (e) => {
       const bounds = canvas.getBoundingClientRect();
@@ -105,8 +126,8 @@ export class MobileControls {
   private moveStick(e: PointerEvent) {
     const rect = this.stick.getBoundingClientRect(),
       radius = rect.width * 0.34;
-    let x = (e.clientX - rect.left - rect.width / 2) / radius,
-      y = (e.clientY - rect.top - rect.height / 2) / radius;
+    let x = (e.clientX - this.stickOrigin.x) / radius,
+      y = (e.clientY - this.stickOrigin.y) / radius;
     const length = Math.hypot(x, y);
     if (length > 1) {
       x /= length;
@@ -152,6 +173,7 @@ export class MobileControls {
     this.joystickPointer = null;
     this.steeringX = 0;
     this.steeringY = 0;
+    this.stick.classList.remove("visible");
     this.lookPointers.clear();
     this.pinchDistance = null;
     this.thumb.style.transform = "translate(0px,0px)";

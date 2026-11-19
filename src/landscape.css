@@ -267,10 +267,6 @@
   .touch-layout .planet-actions button {
     min-height: 40px;
   }
-  .touch-layout .joystick-area {
-    left: max(28px, env(safe-area-inset-left));
-    bottom: calc(65px + env(safe-area-inset-bottom));
-  }
   .touch-layout .joystick {
     width: 106px;
     height: 106px;
@@ -278,10 +274,6 @@
   .touch-layout .joystick-thumb {
     width: 43px;
     height: 43px;
-  }
-  .touch-layout .joystick-area > span {
-    margin-bottom: 9px;
-    font-size: 8px;
   }
   .touch-layout .touch-right-panel {
     right: max(24px, env(safe-area-inset-right));
@@ -406,9 +398,6 @@
   .touch-layout .joystick {
     width: 88px;
     height: 88px;
-  }
-  .touch-layout .joystick-area > span {
-    margin-bottom: 5px;
   }
   .touch-layout .touch-actions {
     gap: 6px;
