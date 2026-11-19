@@ -129,10 +129,6 @@ function updateOrientation(){
   if(blocked&&!orientationBlocked)release();
   orientationBlocked=blocked;
   document.body.classList.toggle('needs-rotation',blocked);
-  const launcherVisible=!$('launcher').hidden;
-  $('launcher').inert=blocked&&launcherVisible;
-  document.body.classList.toggle('launcher-rotation',blocked&&launcherVisible);
-  document.documentElement.classList.toggle('portrait-entry',blocked&&launcherVisible);
   const overlay=$('rotate-overlay'),visible=blocked&&!paused,wasVisible=!overlay.classList.contains('hidden');
   overlay.classList.toggle('hidden',!visible);
   document.querySelectorAll<HTMLElement>('canvas,header,.hud,.surface-info,#touch-controls,#landing-prompt,#takeoff-prompt').forEach(el=>el.inert=visible);
