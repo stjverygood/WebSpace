@@ -31,6 +31,21 @@ button {
 .topbar {
   justify-content: flex-end;
 }
+.current-planet {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-right: auto;
+  color: #d2e3dc;
+  font-size: 12px;
+  letter-spacing: 1.6px;
+  text-shadow: 0 2px 12px #02090c;
+}
+.current-planet-mark {
+  color: #b8e6ce;
+  font-size: 14px;
+  text-shadow: 0 0 14px #b8e6ce66;
+}
 .hud {
   border-top: 0;
 }
@@ -209,6 +224,11 @@ button {
   right: env(safe-area-inset-right);
   padding: 0 20px;
   gap: 12px;
+}
+.touch-layout .current-planet {
+  gap: 7px;
+  font-size: 11px;
+  letter-spacing: 1px;
 }
 .touch-layout .brand {
   font-size: 15px;

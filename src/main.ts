@@ -382,6 +382,8 @@ function frame(now:number){
   uiTime+=dt;
   if(uiTime>.08){
     uiTime=0;
+    const currentPlanetName=$('current-planet-name');
+    if(currentPlanetName.textContent!==local.body.name)currentPlanetName.textContent=local.body.name;
     $('boost-key').textContent=onFoot?'SHIFT':'W / S';$('boost-label').textContent=onFoot?'奔跑':inVehicle?'驾驶':'推进';$('space-label').textContent='跳跃';$('space-control').classList.toggle('hidden',!onFoot);$('interact-label').textContent=onFoot?'上车 / 登船':inVehicle?'下车':'下船';
     const canLand=active&&(onFoot?expedition.canBoard||expedition.canBoardVehicle:inVehicle||local.altitude<90&&flight.speed<20||flight.mode==='landed');
     $('landing-prompt').classList.toggle('hidden',!canLand||!onFoot&&(flight.mode==='landing'||flight.mode==='takeoff'));
