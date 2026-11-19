@@ -58,12 +58,10 @@ export class Flight {
       this.position.addScaledVector(this.velocity,dt);
       if(this.elapsed>3.3){this.mode='manual';this.onNotice('起飞完成 · 已恢复手动驾驶');}return;
     }
-    const stickActive=Math.abs(this.joystickX)>.04;
     const oldBank=this.bankAngle;
-    if(stickActive)this.bankAngle=T.MathUtils.clamp(this.bankAngle-this.joystickX*dt*1.25,-.7,.7);
-    else this.bankAngle=T.MathUtils.damp(this.bankAngle,0,1.8,dt);
+    this.bankAngle-=this.joystickX*dt*1.25;
     const roll=this.bankAngle-oldBank;
-    const yaw=(key('ArrowLeft')-key('ArrowRight'))*dt*1.05-this.mouseX*.0018+Math.sin(this.bankAngle)*dt*.9;
+    const yaw=(key('ArrowLeft')-key('ArrowRight'))*dt*1.05-this.mouseX*.0018;
     const pitch=(key('ArrowUp')-key('ArrowDown')+this.joystickY)*dt*.85-this.mouseY*.0018;
     this.rotation.multiply(new T.Quaternion().setFromAxisAngle(Y,yaw));
     this.rotation.multiply(new T.Quaternion().setFromAxisAngle(X,pitch));

@@ -11,10 +11,11 @@ import './landscape.css';
 const $=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
 const canvas=$<HTMLCanvasElement>('universe');
 type GameSettings={joystickSensitivity:number;cameraDistance:number;viewSensitivity:number};
-const DEFAULT_SETTINGS:GameSettings={joystickSensitivity:1,cameraDistance:10.5,viewSensitivity:1};
+const CAMERA_DISTANCE_MIN=4,CAMERA_DISTANCE_MAX=32;
+const DEFAULT_SETTINGS:GameSettings={joystickSensitivity:1,cameraDistance:16.5,viewSensitivity:1};
 function storedValue(value:unknown,min:number,max:number,fallback:number){const n=Number(value);return Number.isFinite(n)?T.MathUtils.clamp(n,min,max):fallback;}
 function loadSettings():GameSettings{
-  try{const saved=JSON.parse(localStorage.getItem('astral-settings')||'{}') as Partial<GameSettings>;return{joystickSensitivity:storedValue(saved.joystickSensitivity,.25,2.5,DEFAULT_SETTINGS.joystickSensitivity),cameraDistance:storedValue(saved.cameraDistance,6,18,DEFAULT_SETTINGS.cameraDistance),viewSensitivity:storedValue(saved.viewSensitivity,.25,2.5,DEFAULT_SETTINGS.viewSensitivity)};}
+  try{const saved=JSON.parse(localStorage.getItem('astral-settings')||'{}') as Partial<GameSettings>;const oldDefault=Number(saved.cameraDistance)===10.5;return{joystickSensitivity:storedValue(saved.joystickSensitivity,.25,2.5,DEFAULT_SETTINGS.joystickSensitivity),cameraDistance:oldDefault?DEFAULT_SETTINGS.cameraDistance:storedValue(saved.cameraDistance,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX,DEFAULT_SETTINGS.cameraDistance),viewSensitivity:storedValue(saved.viewSensitivity,.25,2.5,DEFAULT_SETTINGS.viewSensitivity)};}
   catch{return{...DEFAULT_SETTINGS};}
 }
 const settings=loadSettings();
@@ -121,7 +122,7 @@ function initAudio(){
 }
 $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.resume();$('sound').textContent=`声音：${soundEnabled?'开':'关'}`;$('sound').setAttribute('aria-pressed',String(soundEnabled));}catch{notify('此浏览器暂不支持音频');}};
 
-const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,look:(x,y)=>{if(expedition.onFoot){flight.mouseX-=x*settings.viewSensitivity;flight.mouseY-=y*settings.viewSensitivity;}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,6,18);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
+const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,look:(x,y)=>{if(expedition.onFoot){flight.mouseX-=x*settings.viewSensitivity;flight.mouseY-=y*settings.viewSensitivity;}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
 function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
   const blocked=needsPortrait(innerWidth,innerHeight,touchLayout());
