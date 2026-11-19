@@ -636,6 +636,21 @@ button {
   border-color: #b8e6ce77;
   color: #c9f2dc;
 }
+
+/* Keep mobile controls exclusive to the active movement mode. These rules
+   intentionally override the shared button display styles above. */
+.touch-layout .touch-left-panel { display: none !important; }
+.touch-layout:not(.on-foot):not(.in-vehicle) .touch-left-panel { display: grid !important; }
+.touch-layout .touch-left-panel .vehicle-only { display: none !important; }
+.touch-layout.in-vehicle .touch-left-panel .vehicle-only { display: grid !important; }
+.touch-layout.in-vehicle .touch-left-panel .ship-only { display: none !important; }
+.touch-layout:not(.on-foot):not(.in-vehicle) .touch-left-panel .ship-only { display: grid !important; }
+.touch-layout.on-foot .touch-right-panel .touch-throttle { display: none !important; }
+.touch-layout .touch-actions .touch-jump { display: none !important; }
+.touch-layout.on-foot .touch-actions .touch-jump { display: grid !important; }
+.touch-layout.in-vehicle .touch-actions .touch-jump,
+.touch-layout:not(.on-foot):not(.in-vehicle) .touch-actions .touch-jump { display: none !important; }
+.touch-layout.ship-grounded .touch-right-panel .touch-throttle { display: none !important; }
 .touch-layout .pause-control {
   width: 54px;
   height: 54px;
