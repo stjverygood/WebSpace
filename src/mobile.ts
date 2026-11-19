@@ -97,7 +97,6 @@ export class MobileControls {
         this.lookPointers.delete((e as PointerEvent).pointerId);
         if (this.lookPointers.size < 2) this.pinchDistance = null;
       });
-    this.hold("touch-boost", () => actions.onFoot() ? ["ShiftLeft"] : []);
     this.hold("touch-reverse", () => actions.onFoot() ? [] : ["KeyS"]);
     this.hold("touch-forward", () => actions.onFoot() ? [] : ["KeyW"]);
     this.hold("touch-roll-left", () => actions.onFoot() ? [] : ["RollLeft"]);
@@ -108,7 +107,13 @@ export class MobileControls {
     document.getElementById("touch-launch")!.onclick = () => {
       if (actions.enabled()) actions.takeoff();
     };
-    document.getElementById("touch-jump")!.onclick = () => {
+    const jumpButton = document.getElementById("touch-jump")!;
+    jumpButton.addEventListener("pointerdown", (e) => {
+      if (!actions.enabled()) return;
+      e.preventDefault();
+      actions.jump();
+    });
+    jumpButton.onclick = () => {
       if (actions.enabled()) actions.jump();
     };
     addEventListener("pointerup", (e) => this.sources.delete(e.pointerId));
@@ -131,6 +136,7 @@ export class MobileControls {
     let x = (e.clientX - this.stickOrigin.x) / radius,
       y = (e.clientY - this.stickOrigin.y) / radius;
     const length = Math.hypot(x, y);
+    const magnitude = Math.min(length, 1);
     if (length > 1) {
       x /= length;
       y /= length;
@@ -144,6 +150,7 @@ export class MobileControls {
       if (x < -0.25) keys.add("KeyA");
       if (y < -0.25) keys.add("KeyW");
       if (y > 0.25) keys.add("KeyS");
+      if (magnitude > 0.68) keys.add("ShiftLeft");
     } else {
       this.steeringX = x;
       this.steeringY = y;

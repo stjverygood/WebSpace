@@ -445,7 +445,7 @@ button {
 }
 .touch-left-panel {
   position: absolute;
-  top: calc(74px + env(safe-area-inset-top));
+  top: 75%;
   left: max(18px, env(safe-area-inset-left));
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -453,6 +453,7 @@ button {
   width: 113px;
   pointer-events: auto;
   z-index: 2;
+  transform: translateY(-50%);
 }
 .touch-left-panel button {
   min-height: 38px;
@@ -579,14 +580,25 @@ button {
   border-color: #b8e6ce66;
   color: var(--mint);
 }
-.touch-actions .foot-only {
+.touch-actions .touch-jump {
   display: none;
 }
 .on-foot .touch-actions .ship-only {
   display: none;
 }
-.on-foot .touch-actions .foot-only {
+.on-foot .touch-actions .touch-jump {
   display: block;
+}
+.touch-layout .touch-control-button {
+  border: 1px solid #b8e6ce30;
+  border-radius: 7px;
+  background: #0b202ad1;
+  color: #c3d9cf;
+}
+.touch-layout .touch-control-button:active,
+.touch-layout .touch-control-button.pressed {
+  border-color: #b8e6ceaa;
+  background: #b8e6ce33;
 }
 .touch-layout .surface-info {
   top: calc(90px + env(safe-area-inset-top));

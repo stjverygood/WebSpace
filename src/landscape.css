@@ -280,7 +280,7 @@
     bottom: calc(62px + env(safe-area-inset-bottom));
   }
   .touch-layout .touch-left-panel {
-    top: calc(68px + env(safe-area-inset-top));
+    top: 75%;
     left: max(24px, env(safe-area-inset-left));
   }
   .touch-layout .touch-throttle {

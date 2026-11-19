@@ -13,7 +13,7 @@
     <canvas id="universe" aria-label="太空漫游游戏" tabindex="0"></canvas>
     <div class="vignette"></div>
     <header class="topbar">
-      <button class="icon-button pause-control" id="pause-button" title="暂停菜单" aria-label="暂停游戏">暂停</button>
+      <button class="icon-button pause-control touch-control-button" id="pause-button" title="暂停菜单" aria-label="暂停游戏">暂停</button>
     </header>
     <div id="reticle" class="reticle hidden"><div></div><span></span></div>
     <div id="target-marker" class="target-marker hidden"><span>⌖</span><label id="marker-name">苍蓝星</label></div>
@@ -53,7 +53,7 @@
           </div>
           <div id="manual-mobile" role="tabpanel" aria-labelledby="manual-mobile-tab" class="hidden">
             <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>左侧动态摇杆</dt><dd>左右转向机身，上下控制俯仰</dd></div><div><dt>「左倾 / 右倾」</dt><dd>按住调整飞船侧倾，松开保持</dd></div><div><dt>右侧「后退 / 前进」</dt><dd>按住反向推进 / 持续前进加速</dd></div><div><dt>镜头</dt><dd>随飞船朝向移动，不可手动转动</dd></div><div><dt>双指捏合</dt><dd>调整相机远近</dd></div><div><dt>「下船 / 起飞」</dt><dd>降落并下船 / 登船后起飞</dd></div></dl>
-            <h3>地表探索</h3><dl class="manual-list"><div><dt>左侧动态摇杆</dt><dd>按下并拖动：前后左右行走，松手停止</dd></div><div><dt>滑动右侧画面</dt><dd>转动第三人称视角</dd></div><div><dt>按住「奔跑」+ 摇杆</dt><dd>加快移动</dd></div><div><dt>点击「跳跃」</dt><dd>起跳，落地后可再次跳跃</dd></div><div><dt>点击「登船」</dt><dd>靠近停泊飞船后进入驾驶舱</dd></div><div><dt>右上「暂停」</dt><dd>暂停游戏，进入菜单</dd></div></dl>
+            <h3>地表探索</h3><dl class="manual-list"><div><dt>左侧动态摇杆</dt><dd>按下并拖动行走；幅度较小为走路，超过阈值自动奔跑</dd></div><div><dt>滑动右侧画面</dt><dd>转动第三人称视角</dd></div><div><dt>点击「跳跃」</dt><dd>行走或奔跑时均可跳跃</dd></div><div><dt>点击「登船」</dt><dd>靠近停泊飞船后进入驾驶舱</dd></div><div><dt>右上「暂停」</dt><dd>暂停游戏，进入菜单</dd></div></dl>
             <p class="manual-tip">竖屏游玩，按 9:16 设计并适配更高屏幕。左手移动，右手转向或点击动作按钮，可同时操作。点击「全屏」可尝试隐藏浏览器工具栏并锁定竖屏；不支持时，开启手机自动旋转后手动竖置即可。退出全屏会自动暂停。</p>
           </div>
           <p class="manual-rules">下船条件：距地表 90 m 内、速度低于 20 m/s，自动落稳后下船。登船条件：距飞船 9 m 内且已落地。</p>
@@ -62,8 +62,8 @@
     </div>
     <div id="touch-controls" class="touch-controls" aria-label="手机游戏控制">
       <div id="joystick-area" class="joystick-area" aria-label="左侧动态摇杆区域"><div id="joystick" class="joystick" role="group" aria-label="虚拟方向摇杆"><span class="joystick-axis">＋</span><div id="joystick-thumb" class="joystick-thumb"></div></div></div>
-      <div class="touch-left-panel ship-only"><button id="touch-roll-left" aria-label="左倾">左倾</button><button id="touch-roll-right" aria-label="右倾">右倾</button></div>
-      <div class="touch-right-panel"><div class="touch-throttle ship-only"><button id="touch-reverse" aria-label="后退推进">后退</button><button id="touch-forward" aria-label="前进加速">前进</button></div><div class="touch-actions"><button id="touch-boost" class="foot-only">奔跑</button><button id="touch-jump" class="foot-only">跳跃</button><button id="touch-action" class="touch-accent">下船</button><button id="touch-launch" class="hidden">起飞</button></div></div>
+      <div class="touch-left-panel ship-only"><button id="touch-roll-left" class="touch-control-button" aria-label="左倾">左倾</button><button id="touch-roll-right" class="touch-control-button" aria-label="右倾">右倾</button></div>
+      <div class="touch-right-panel"><div class="touch-throttle ship-only"><button id="touch-reverse" class="touch-control-button" aria-label="后退推进">后退</button><button id="touch-forward" class="touch-control-button" aria-label="前进加速">前进</button></div><div class="touch-actions"><button id="touch-jump" class="touch-control-button touch-jump">跳跃</button><button id="touch-action" class="touch-control-button touch-accent">下船</button><button id="touch-launch" class="touch-control-button hidden">起飞</button></div></div>
     </div>
     <div id="rotate-overlay" class="rotate-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rotate-title">
       <div class="rotate-card"><div class="eyebrow">PORTRAIT EXPLORATION</div><div class="rotate-illustration" aria-hidden="true"><span class="rotate-phone"></span><span class="rotate-arrow">↻</span></div><h2 id="rotate-title">把手机竖过来。</h2><p>竖屏继续探索。</p><button id="rotate-fullscreen" class="primary">尝试全屏竖屏 <span>⛶</span></button><p id="rotate-note" class="rotate-note" role="status">请开启手机自动旋转，竖置后即可游玩。<br>浏览器不支持方向锁定时，可手动旋转手机。</p><button id="rotate-menu" class="reset-button">菜单与操作说明</button></div>

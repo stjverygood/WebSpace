@@ -19,11 +19,12 @@ send('universe','pointerdown',3,100,200);send('universe','pointermove',3,120,210
 assert.ok(controls.keys.has('KeyW'),'camera finger does not cancel held button');
 send('universe','pointercancel',3);send('universe','pointermove',3,150,230);assert.equal(look.length,1);
 send('touch-forward','pointercancel',2);assert.equal(controls.keys.size,0,'pointer cancellation releases thrust');
-onFoot=true;send('touch-boost','pointerdown',4);assert.ok(controls.keys.has('ShiftLeft'));assert.ok(!controls.keys.has('KeyW'),'sprint does not force walking');
+onFoot=true;assert.ok(!controls.keys.has('ShiftLeft'),'walking starts below the joystick sprint threshold');
 send('joystick','pointerdown',5,100,19);assert.ok(controls.keys.has('KeyD'));assert.ok(controls.keys.has('KeyW'));assert.equal(controls.steering.x,0,'walking keeps WASD movement instead of ship steering');
+assert.ok(controls.keys.has('ShiftLeft'),'pushing the joystick past its sprint threshold automatically runs');
 const walkingKeys=[...controls.keys].sort();send('touch-forward','pointerdown',8);assert.deepEqual([...controls.keys].sort(),walkingKeys,'ship throttle is inert while walking');
-send('joystick','lostpointercapture',5);assert.deepEqual([...controls.keys],['ShiftLeft'],'lost joystick capture preserves the sprint finger');
+send('joystick','lostpointercapture',5);assert.deepEqual([...controls.keys],[],'releasing the joystick stops movement and sprint');
 controls.reset();assert.equal(controls.keys.size,0);assert.deepEqual(controls.steering,{x:0,y:0});assert.equal(elements.get('joystick-thumb').style.transform,'translate(0px,0px)');
-enabled=false;send('joystick','pointerdown',6,59,0);send('touch-boost','pointerdown',7);elements.get('touch-action').onclick();assert.equal(controls.keys.size,0);assert.equal(interactions,0,'paused controls are inert');
+enabled=false;send('joystick','pointerdown',6,59,0);elements.get('touch-action').onclick();assert.equal(controls.keys.size,0);assert.equal(interactions,0,'paused controls are inert');
 enabled=true;elements.get('touch-action').onclick();elements.get('touch-launch').onclick();elements.get('touch-jump').onclick();assert.deepEqual([interactions,launches,jumps],[1,1,1]);
 console.log('PASS: multi-finger input ownership, joystick, camera drag, sprint, pointer cancellation, lost capture, pause reset and action buttons.');
