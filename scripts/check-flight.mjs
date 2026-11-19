@@ -24,7 +24,7 @@ step(collision, 1);
 assert.ok(collision.local.altitude >= 2.799, 'high speed terrain collision prevents penetration');
 const manual = new Flight(); manual.keys.add('KeyW'); step(manual, 3);
 assert.ok(manual.speed > 40, 'thrust accelerates craft');
-manual.keys.clear(); manual.keys.add('Space'); step(manual, 3);
-assert.ok(manual.speed < .1, 'brake cancels inertia');
-console.log('PASS: manual flight, terrain clearance, landing and takeoff on all 3 planets; collision, thrust and braking.');
+manual.keys.clear(); manual.keys.add('KeyS'); step(manual, 3.5);
+assert.ok(manual.speed < 35, 'reverse thrust slows forward motion');
+console.log('PASS: manual flight, terrain clearance, landing and takeoff on all 3 planets; collision, thrust and reverse deceleration.');
 

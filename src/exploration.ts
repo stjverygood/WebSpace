@@ -114,7 +114,7 @@ export class Expedition {
     if(this.flight.mode==='landing'){this.pendingExit=true;this.onNotice('正在降落 · 落稳后自动下船');return;}
     if(this.flight.mode==='takeoff'){this.onNotice('起飞中，暂时无法下船');return;}
     if(this.flight.local.altitude>90){this.onNotice('靠近地表至 90 m 内，按 F 降落并下船');return;}
-    if(this.flight.speed>20){this.onNotice('请按住空格制动至 20 m/s 以下再下船');return;}
+    if(this.flight.speed>20){this.onNotice('请按住 S 反向推进减速至 20 m/s 以下再下船');return;}
     this.pendingExit=true;this.flight.interact();this.onNotice('正在降落 · 落稳后自动下船');
   }
   takeoff(){

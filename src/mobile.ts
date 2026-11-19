@@ -62,9 +62,6 @@ export class MobileControls {
     this.hold("touch-boost", () => actions.onFoot() ? ["ShiftLeft"] : []);
     this.hold("touch-reverse", () => actions.onFoot() ? [] : ["KeyS"]);
     this.hold("touch-forward", () => actions.onFoot() ? [] : ["KeyW"]);
-    this.hold("touch-brake", () => ["Space"]);
-    this.hold("touch-roll-left", () => ["KeyQ"]);
-    this.hold("touch-roll-right", () => ["KeyE"]);
     document.getElementById("touch-action")!.onclick = () => {
       if (actions.enabled()) actions.interact();
     };

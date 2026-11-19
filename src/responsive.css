@@ -375,9 +375,19 @@ button {
   margin-bottom: 13px;
   text-shadow: 0 1px 7px #000;
 }
+.touch-right-panel {
+  position: absolute;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: calc(101px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: auto;
+}
 .touch-throttle {
   display: grid;
-  width: 118px;
+  width: 113px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
   margin-bottom: 8px;
@@ -397,7 +407,7 @@ button {
   border-color: #b8e6ceaa;
   background: #b8e6ce33;
 }
-.on-foot .joystick-area .touch-throttle {
+.on-foot .touch-right-panel .touch-throttle {
   display: none;
 }
 .joystick {
@@ -437,9 +447,7 @@ button {
   pointer-events: none;
 }
 .touch-actions {
-  position: absolute;
-  right: max(18px, env(safe-area-inset-right));
-  bottom: calc(101px + env(safe-area-inset-bottom));
+  position: static;
   display: grid;
   grid-template-columns: repeat(2, 52px);
   gap: 9px;
@@ -613,7 +621,7 @@ button {
     bottom: 85px;
   }
   .touch-layout .joystick-area,
-  .touch-layout .touch-actions {
+  .touch-layout .touch-right-panel {
     bottom: 80px;
   }
   .touch-layout .hud {

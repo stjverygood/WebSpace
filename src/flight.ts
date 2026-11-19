@@ -25,7 +25,7 @@ export class Flight {
     if(this.mode==='landing'||this.mode==='takeoff')return;
     const local=this.local;
     if(local.altitude>90){this.onNotice('请靠近地表至 90 m 以内再降落');return;}
-    if(this.speed>20){this.onNotice('速度过高 · 按住空格制动至 20 m/s 以下');return;}
+    if(this.speed>20){this.onNotice('速度过高 · 按住 S 反向推进减速至 20 m/s 以下');return;}
     this.landBody=local.body;this.landNormal.copy(local.normal);
     this.destination.copy(local.body.center).addScaledVector(local.normal,surfaceRadius(local.body,local.normal)+2.8);
     this.mode='landing';this.onNotice('辅助降落启动 · 正在稳定姿态');
@@ -60,13 +60,12 @@ export class Flight {
     const pitch=(key('ArrowUp')-key('ArrowDown'))*dt*.85-this.mouseY*.0018;
     this.rotation.multiply(new T.Quaternion().setFromAxisAngle(Y,yaw));
     this.rotation.multiply(new T.Quaternion().setFromAxisAngle(X,pitch));
-    this.rotation.multiply(new T.Quaternion().setFromAxisAngle(Z,(key('KeyQ')-key('KeyE'))*dt*1.1));
     this.rotation.normalize();
     const proximity=this.local;
     const acceleration=90;
-    const direction=new T.Vector3(key('KeyD')-key('KeyA'),0,-key('KeyW')+key('KeyS')*.55).applyQuaternion(this.rotation);
+    const direction=new T.Vector3(0,0,-key('KeyW')+key('KeyS')*.55).applyQuaternion(this.rotation);
     this.velocity.addScaledVector(direction,acceleration*dt);
-    this.velocity.multiplyScalar(Math.exp(-dt*(key('Space')?3.5:.13)));
+    this.velocity.multiplyScalar(Math.exp(-dt*.13));
     const speedLimit=proximity.altitude<70?35:proximity.altitude<180?80:260;
     if(this.speed>speedLimit)this.velocity.multiplyScalar(Math.max(speedLimit/this.speed,Math.exp(-dt*2)));
     this.position.addScaledVector(this.velocity,dt);

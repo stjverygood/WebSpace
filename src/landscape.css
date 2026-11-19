@@ -283,9 +283,16 @@
     margin-bottom: 9px;
     font-size: 8px;
   }
-  .touch-layout .touch-actions {
+  .touch-layout .touch-right-panel {
     right: max(24px, env(safe-area-inset-right));
     bottom: calc(62px + env(safe-area-inset-bottom));
+  }
+  .touch-layout .touch-throttle {
+    width: 160px;
+    margin-bottom: 0;
+  }
+  .touch-layout .touch-actions {
+    position: static;
     grid-template-columns: repeat(3, 48px);
     gap: 8px;
   }
