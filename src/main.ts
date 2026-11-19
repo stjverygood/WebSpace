@@ -125,7 +125,7 @@ function initAudio(){
 }
 $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.resume();$('sound-state').textContent=soundEnabled?'开':'关';$('sound').setAttribute('aria-pressed',String(soundEnabled));}catch{notify('此浏览器暂不支持音频');}};
 
-const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else{cameraOrbitYaw+=x*.0018*settings.viewSensitivity;cameraOrbitPitch=T.MathUtils.clamp(cameraOrbitPitch+y*.0018*settings.viewSensitivity,-.65,.65);}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
+const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,look:(x,y)=>{if(expedition.onFoot){flight.mouseX-=x*settings.viewSensitivity;flight.mouseY-=y*settings.viewSensitivity;}else{cameraOrbitYaw-=x*.0018*settings.viewSensitivity;cameraOrbitPitch=T.MathUtils.clamp(cameraOrbitPitch-y*.0018*settings.viewSensitivity,-.65,.65);}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
 function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
   const blocked=needsLandscape(innerWidth,innerHeight,touchLayout());
@@ -294,10 +294,10 @@ function frame(now:number){
   const cameraRear=active?Math.sqrt(Math.max(0,cameraDistance*cameraDistance-cameraHeight*cameraHeight)):23;
   const cameraOffset=new T.Vector3(0,cameraHeight,cameraRear);
   if(active&&!onFoot)cameraOffset.applyEuler(new T.Euler(cameraOrbitPitch,cameraOrbitYaw,0,'YXZ'));
-  const desiredCamera=cameraOffset.applyQuaternion(flight.rotation).add(ship.position);
-  shipCameraTarget.position.set(active?0:3.5,active?1:2.3,active?(local.altitude<25?-6:-9):-28);
+  shipCameraTarget.position.set(active?0:3.5,active?.8:2.3,active?0:-28);
   ship.updateMatrixWorld(true);
   const desiredLook=shipCameraTarget.getWorldPosition(new T.Vector3());
+  const desiredCamera=cameraOffset.applyQuaternion(flight.rotation).add(active?desiredLook:ship.position);
   const cameraUp=onFoot?walker.normal:new T.Vector3(0,1,0).applyQuaternion(flight.rotation);
   if(onFoot){
     desiredLook.copy(walker.position).addScaledVector(cameraUp,1.25);
