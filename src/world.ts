@@ -7,9 +7,9 @@ export interface Planet {
   atmosphere: number; gravity: number; ring?: boolean; parent?: Planet;
 }
 export const planets: Planet[] = [
-  {name:'地球',code:'EARTH · 03',description:'海洋、山脉，以及尚未被命名的远方。',type:'海洋 / 山脉',center:new T.Vector3(350,-80,-1100),radius:300,seed:1.7,colors:[0x24555e,0x41818a,0x8aa99a,0xb7baa1,0xd7d0b3],gravity:9.8,atmosphere:0x72b8c9},
-  {name:'火星',code:'MARS · 04',description:'风穿过赤色峡谷，时间在这里慢了下来。',type:'荒漠 / 峡谷',center:new T.Vector3(-1050,-310,-500),radius:210,seed:4.3,colors:[0x714442,0x995b4c,0xb97959,0xd79c72,0xe0c29c],gravity:3.7,atmosphere:0xdc9171},
-  {name:'土星',code:'SATURN · 06',description:'穿过冰尘构成的光环，抵达安静的灰色高地。',type:'岩原 / 冰尘环',center:new T.Vector3(-900,430,-2700),radius:440,seed:8.6,colors:[0x535c70,0x7a8191,0xa7a9ac,0xbfc1b7,0xe1dbc5],gravity:14.5,atmosphere:0xaab2de,ring:true},
+  {name:'地球',code:'EARTH · 03',description:'海洋、山脉，以及尚未被命名的远方。',type:'海洋 / 山脉',center:new T.Vector3(455,-80,-1430),radius:300,seed:1.7,colors:[0x24555e,0x41818a,0x8aa99a,0xb7baa1,0xd7d0b3],gravity:9.8,atmosphere:0x72b8c9},
+  {name:'火星',code:'MARS · 04',description:'风穿过赤色峡谷，时间在这里慢了下来。',type:'荒漠 / 峡谷',center:new T.Vector3(-2347,-310,-1118),radius:210,seed:4.3,colors:[0x714442,0x995b4c,0xb97959,0xd79c72,0xe0c29c],gravity:3.7,atmosphere:0xdc9171},
+  {name:'土星',code:'SATURN · 06',description:'穿过冰尘构成的光环，抵达安静的灰色高地。',type:'岩原 / 冰尘环',center:new T.Vector3(-1329,430,-3984),radius:440,seed:8.6,colors:[0x535c70,0x7a8191,0xa7a9ac,0xbfc1b7,0xe1dbc5],gravity:14.5,atmosphere:0xaab2de,ring:true},
 ];
 const aurelia=planets[0];
 planets.push({name:'月球',code:'LUNA · 01',description:'地球的天然卫星，布满静谧的灰色高地。',type:'月球 / 高地',center:aurelia.center.clone().add(new T.Vector3(0,0,470)),radius:68,seed:12.4,colors:[0x555d65,0x747e83,0x969b96,0xb7b5a9,0xd0cdbc],gravity:1.62,atmosphere:0x8398ad,parent:aurelia});

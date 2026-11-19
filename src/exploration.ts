@@ -166,7 +166,7 @@ export class Expedition {
     const tangent=new T.Vector3().crossVectors(towardOrigin,UP).normalize();
     const playerNormal=surfaceNormal(body,towardOrigin,1);
     const roverNormal=surfaceNormal(body,playerNormal.clone().applyAxisAngle(tangent,.12),2.8);
-    const shipNormal=surfaceNormal(body,playerNormal.clone().applyAxisAngle(tangent,.78),6);
+    const shipNormal=playerNormal.clone().applyAxisAngle(tangent,.025).normalize();
     const playerPoint=body.center.clone().addScaledVector(playerNormal,groundRadius(body,playerNormal)+.04);
     const roverPoint=body.center.clone().addScaledVector(roverNormal,groundRadius(body,roverNormal)+.04);
     const roverHeading=roverPoint.clone().sub(playerPoint).addScaledVector(playerNormal,-roverPoint.clone().sub(playerPoint).dot(playerNormal)).normalize();
