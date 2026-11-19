@@ -65,17 +65,17 @@ for(let i=0;i<1500;i++){
 }
 const dustGeo=new T.BufferGeometry();dustGeo.setAttribute('position',new T.Float32BufferAttribute(dustPositions,3));dustGeo.setAttribute('color',new T.Float32BufferAttribute(dustColors,3));
 scene.add(new T.Points(dustGeo,new T.PointsMaterial({size:13,vertexColors:true,transparent:true,opacity:.4,depthWrite:false})));
-scene.add(new T.HemisphereLight(0xbed5dd,0x24373e,1.6));
-const sunlight=new T.DirectionalLight(0xffe2bb,3.3);sunlight.position.set(-2000,1800,1800);scene.add(sunlight);
+scene.add(new T.HemisphereLight(0xbed5dd,0x24373e,1.25));
+const sunlight=new T.PointLight(0xffe2bb,18000000,12000,2);sunlight.position.set(0,0,0);scene.add(sunlight);
 const fill=new T.DirectionalLight(0x78bed2,.7);fill.position.set(1200,200,100);scene.add(fill);
 for(const p of planets)scene.add(createPlanet(p));
 
-const sunPosition=new T.Vector3(-3200,1000,-5200);
-const sun=new T.Mesh(new T.SphereGeometry(64,24,16),new T.MeshBasicMaterial({color:0xffe2b0}));sun.position.copy(sunPosition);scene.add(sun);
+const sunPosition=new T.Vector3(0,0,0);
+const sun=new T.Mesh(new T.SphereGeometry(210,24,16),new T.MeshBasicMaterial({color:0xffd994}));sun.position.copy(sunPosition);scene.add(sun);
 const glowCanvas=document.createElement('canvas');glowCanvas.width=128;glowCanvas.height=128;
 const ctx=glowCanvas.getContext('2d')!;const gradient=ctx.createRadialGradient(64,64,0,64,64,64);
 gradient.addColorStop(0,'rgba(255,234,194,.65)');gradient.addColorStop(.08,'rgba(255,216,164,.32)');gradient.addColorStop(.3,'rgba(255,190,132,.08)');gradient.addColorStop(1,'rgba(255,170,110,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
-const glow=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(glowCanvas),transparent:true,depthWrite:false,blending:T.AdditiveBlending}));glow.position.copy(sunPosition);glow.scale.set(1900,1900,1);scene.add(glow);
+const glow=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(glowCanvas),transparent:true,depthWrite:false,blending:T.AdditiveBlending}));glow.position.copy(sunPosition);glow.scale.set(1200,1200,1);scene.add(glow);
 
 // One instanced draw call for the entire asteroid field.
 const rocks=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),new T.MeshStandardMaterial({color:0x7b7972,roughness:1,flatShading:true}),190);

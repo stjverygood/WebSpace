@@ -4,13 +4,15 @@ const UP=new T.Vector3(0,1,0);
 export interface Planet {
   name: string; code: string; description: string; type: string;
   center: T.Vector3; radius: number; seed: number; colors: number[];
-  atmosphere: number; gravity: number; ring?: boolean;
+  atmosphere: number; gravity: number; ring?: boolean; parent?: Planet;
 }
 export const planets: Planet[] = [
   {name:'苍蓝星',code:'AURELIA · 04B',description:'海洋、山脉，以及尚未被命名的远方。',type:'海洋 / 山脉',center:new T.Vector3(350,-80,-1100),radius:300,seed:1.7,colors:[0x24555e,0x41818a,0x8aa99a,0xb7baa1,0xd7d0b3],gravity:9.8,atmosphere:0x72b8c9},
   {name:'赤砂星',code:'EMBER · 09C',description:'风穿过赤色峡谷，时间在这里慢了下来。',type:'荒漠 / 峡谷',center:new T.Vector3(-1050,-310,-500),radius:210,seed:4.3,colors:[0x714442,0x995b4c,0xb97959,0xd79c72,0xe0c29c],gravity:3.7,atmosphere:0xdc9171},
   {name:'环带星',code:'VESPER · 12A',description:'穿过冰尘构成的光环，抵达安静的灰色高地。',type:'岩原 / 冰尘环',center:new T.Vector3(-900,430,-2700),radius:440,seed:8.6,colors:[0x535c70,0x7a8191,0xa7a9ac,0xbfc1b7,0xe1dbc5],gravity:14.5,atmosphere:0xaab2de,ring:true},
 ];
+const aurelia=planets[0];
+planets.push({name:'月影',code:'LUNAR · 01',description:'苍蓝星的静谧卫星，远离海洋与云层。',type:'月球 / 高地',center:aurelia.center.clone().add(new T.Vector3(0,0,470)),radius:68,seed:12.4,colors:[0x555d65,0x747e83,0x969b96,0xb7b5a9,0xd0cdbc],gravity:1.62,atmosphere:0x8398ad,parent:aurelia});
 
 // The same continuous radial field drives the rendered vertices and collisions.
 export function terrain(p: Planet, n: T.Vector3): number {
@@ -54,7 +56,8 @@ export function advancePlanetMotion(dt:number){
   for(const [planet,motion] of motions){
     motion.previousCenter.copy(planet.center);motion.previousSpin.copy(motion.spin);
     const phase=motion.initialPhase+clockTimeForPlanets/motion.orbitPeriod*Math.PI*2;
-    planet.center.set(Math.cos(phase)*motion.orbitRadius,motion.baseCenter.y,Math.sin(phase)*motion.orbitRadius);
+    if(planet.parent){planet.center.copy(planet.parent.center).add(new T.Vector3(Math.cos(phase)*motion.orbitRadius,motion.baseCenter.y-motion.baseCenter.y,Math.sin(phase)*motion.orbitRadius));}
+    else planet.center.set(Math.cos(phase)*motion.orbitRadius,motion.baseCenter.y,Math.sin(phase)*motion.orbitRadius);
     motion.spin.setFromAxisAngle(UP,clockTimeForPlanets/motion.spinPeriod*Math.PI*2);
     motion.group.position.copy(planet.center);motion.group.quaternion.copy(motion.spin);motion.group.updateMatrixWorld(true);
     const list=obstacles.get(planet)??[];
@@ -235,11 +238,12 @@ export function createPlanet(p:Planet):T.Group {
       mesh.rotation.x=Math.PI/2;rings.add(mesh);
     }group.add(rings);
   }
-  const orbitRadius=Math.hypot(p.center.x,p.center.z);
-  const initialPhase=Math.atan2(p.center.z,p.center.x);
+  const orbitOffset=p.parent?p.center.clone().sub(p.parent.center):p.center;
+  const orbitRadius=p.parent?orbitOffset.length():Math.hypot(p.center.x,p.center.z);
+  const initialPhase=Math.atan2(orbitOffset.z,orbitOffset.x);
   const index=planets.indexOf(p);
   const collidersLocal=colliders.map(item=>item.position.clone().sub(p.center));
-  motions.set(p,{group,baseCenter:p.center.clone(),initialPhase,orbitRadius,orbitPeriod:[3600,5400,7200][Math.max(0,index)]??5400,spinPeriod:[900,1400,2100][Math.max(0,index)]??1400,spin:new T.Quaternion(),previousCenter:p.center.clone(),previousSpin:new T.Quaternion(),obstacleLocal:collidersLocal});
+  motions.set(p,{group,baseCenter:p.center.clone(),initialPhase,orbitRadius,orbitPeriod:p.parent?320:([3600,5400,7200][Math.max(0,index)]??5400),spinPeriod:p.parent?1100:([900,1400,2100][Math.max(0,index)]??1400),spin:new T.Quaternion(),previousCenter:p.center.clone(),previousSpin:new T.Quaternion(),obstacleLocal:collidersLocal});
   return group;
 }
 
