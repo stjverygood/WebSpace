@@ -265,7 +265,11 @@ function frame(now:number){
   cameraPosition.copy(desiredCamera);
   // A chase camera must remain above terrain even when the player flies towards it.
   for(const p of planets){const radial=cameraPosition.clone().sub(p.center);const direction=radial.clone().normalize();const safe=(onFoot?groundRadius(p,direction):surfaceRadius(p,direction))+(onFoot?.65:4);if(radial.length()<safe)cameraPosition.copy(p.center).addScaledVector(direction,safe);}
-  if(!paused&&!orientationBlocked){camera.position.lerp(cameraPosition,1-Math.exp(-dt*(onFoot?8:4)));cameraLook.lerp(desiredLook,1-Math.exp(-dt*(onFoot?9:5)));worldUp.lerp(cameraUp,1-Math.exp(-dt*6));}
+  const speedResponse=Math.min(flight.speed/80,1);
+  const positionFollow=onFoot?8:9+speedResponse*6;
+  const lookFollow=onFoot?9:11+speedResponse*6;
+  const upFollow=onFoot?6:9+speedResponse*3;
+  if(!paused&&!orientationBlocked){camera.position.lerp(cameraPosition,1-Math.exp(-dt*positionFollow));cameraLook.lerp(desiredLook,1-Math.exp(-dt*lookFollow));worldUp.lerp(cameraUp,1-Math.exp(-dt*upFollow));}
   // Clamp the interpolated camera too, so entering a hillside never clips through it.
   if(onFoot){const radial=camera.position.clone().sub(walker.body.center);const direction=radial.clone().normalize();const safe=groundRadius(walker.body,direction)+.65;if(radial.length()<safe)camera.position.copy(walker.body.center).addScaledVector(direction,safe);}
   camera.up.copy(worldUp).normalize();camera.lookAt(cameraLook);
