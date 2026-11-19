@@ -24,14 +24,13 @@
       <button class="primary" id="start">开始漫游 <span>↗</span></button>
       <div class="intro-note desktop-note"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> 驾驶飞船 <span class="note-dot">·</span> 鼠标控制视角</div>
       <div class="intro-note touch-note">横屏漫游 · 左手移动，右手转向<br>操作说明可在暂停菜单中查看</div>
-      <div class="edition">EXPLORATION BUILD <span>01 / 无需目的地</span></div>
+      <div class="edition">EXPLORATION BUILD <span>01 / 自由探索</span></div>
     </main>
     <aside class="planet-card" id="planet-card">
-      <div class="eyebrow">YOUR NEXT HORIZON <span class="card-index" id="planet-index">01 / 03</span></div>
+      <div class="eyebrow">最近星球 · 环境资料</div>
       <div class="planet-heading"><h2 id="planet-name">苍蓝星</h2><span class="planet-code" id="planet-code">AURELIA · 04B</span></div>
       <p id="planet-description">海洋、山脉，以及尚未被命名的远方。</p>
-      <div class="planet-data"><div><label>距离</label><strong id="target-distance">—</strong></div><div><label>地表</label><strong id="planet-type">海洋 / 山脉</strong></div><div><label>着陆</label><strong class="mint">允许 <span>↙</span></strong></div></div>
-      <div class="planet-actions"><button class="target-cycle" id="previous" aria-label="上一个行星">←</button><button class="approach" id="approach">设为航向 <span>↗</span></button><button class="target-cycle" id="next" aria-label="下一个行星">→</button></div>
+      <div class="planet-data"><div><label>地表</label><strong id="planet-type">海洋 / 山脉</strong></div><div><label>重力</label><strong class="mint" id="planet-gravity">9.8 m/s²</strong></div></div>
     </aside>
     <div class="flight-label" id="flight-label"><span class="pulse"></span><span id="flight-mode">自由巡航</span><span class="flight-sector">SECTOR 07 : 24</span></div>
     <div id="reticle" class="reticle hidden"><div></div><span></span></div>
@@ -57,12 +56,12 @@
           <div class="eyebrow">FLIGHT & FIELD MANUAL</div><h2 id="instructions-title">操作说明</h2>
           <div class="manual-tabs" role="tablist" aria-label="操作平台"><button id="manual-desktop-tab" role="tab" aria-selected="true" aria-controls="manual-desktop">电脑按键</button><button id="manual-mobile-tab" role="tab" aria-selected="false" aria-controls="manual-mobile">手机触屏</button></div>
           <div id="manual-desktop" role="tabpanel" aria-labelledby="manual-desktop-tab">
-            <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>W / S</dt><dd>前进推进 / 反向减速</dd></div><div><dt>A / D</dt><dd>向左 / 向右平移</dd></div><div><dt>鼠标 / 方向键</dt><dd>调整飞船朝向</dd></div><div><dt>Q / E</dt><dd>向左 / 向右翻滚</dd></div><div><dt>Shift + W</dt><dd>巡航加速</dd></div><div><dt>空格</dt><dd>按住制动</dd></div><div><dt>N</dt><dd>前往所选行星 / 取消导航</dd></div><div><dt>F</dt><dd>降落并下船 / 落地后下船</dd></div><div><dt>R</dt><dd>登船后起飞</dd></div></dl>
+            <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>W / S</dt><dd>前进推进 / 反向减速</dd></div><div><dt>A / D</dt><dd>向左 / 向右平移</dd></div><div><dt>鼠标 / 方向键</dt><dd>调整飞船朝向</dd></div><div><dt>Q / E</dt><dd>向左 / 向右翻滚</dd></div><div><dt>Shift + W</dt><dd>巡航加速</dd></div><div><dt>空格</dt><dd>按住制动</dd></div><div><dt>F</dt><dd>靠近地表后降落并下船</dd></div><div><dt>R</dt><dd>登船后起飞</dd></div></dl>
             <h3>地表探索</h3><dl class="manual-list"><div><dt>WASD</dt><dd>前后左右行走</dd></div><div><dt>鼠标 / 方向键</dt><dd>转动第三人称视角</dd></div><div><dt>Shift + 移动</dt><dd>奔跑</dd></div><div><dt>空格</dt><dd>跳跃，重力影响跳高与滞空</dd></div><div><dt>F</dt><dd>靠近飞船后登船</dd></div><div><dt>Esc / 右上暂停</dt><dd>暂停 / 继续；说明中返回菜单</dd></div></dl>
-            <p class="manual-tip">点击游戏画面锁定鼠标；也可按住鼠标左键拖动转向。导航卡片的 ← / → 切换行星，「设为航向」启动导航。</p>
+            <p class="manual-tip">点击游戏画面锁定鼠标；也可按住鼠标左键拖动转向。驾驶飞船自行寻找星球，附近星球资料会显示在右侧。</p>
           </div>
           <div id="manual-mobile" role="tabpanel" aria-labelledby="manual-mobile-tab" class="hidden">
-            <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>左下摇杆</dt><dd>上推前进，下拉反向减速；左右平移</dd></div><div><dt>滑动右侧画面</dt><dd>调整飞船朝向</dd></div><div><dt>按住「加速」</dt><dd>持续向前加速</dd></div><div><dt>按住「制动」</dt><dd>减速至悬停</dd></div><div><dt>按住「左滚 / 右滚」</dt><dd>向对应方向翻滚</dd></div><div><dt>「下船 / 起飞」</dt><dd>降落并下船 / 登船后起飞</dd></div><div><dt>行星卡片 ← / →</dt><dd>选择目的地</dd></div><div><dt>「设为航向」</dt><dd>自动接近；再次点击取消导航</dd></div></dl>
+            <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>左下摇杆</dt><dd>上推前进，下拉反向减速；左右平移</dd></div><div><dt>滑动右侧画面</dt><dd>调整飞船朝向</dd></div><div><dt>按住「加速」</dt><dd>持续向前加速</dd></div><div><dt>按住「制动」</dt><dd>减速至悬停</dd></div><div><dt>按住「左滚 / 右滚」</dt><dd>向对应方向翻滚</dd></div><div><dt>「下船 / 起飞」</dt><dd>降落并下船 / 登船后起飞</dd></div></dl>
             <h3>地表探索</h3><dl class="manual-list"><div><dt>左下摇杆</dt><dd>前后左右行走，松手停止</dd></div><div><dt>滑动右侧画面</dt><dd>转动第三人称视角</dd></div><div><dt>按住「奔跑」+ 摇杆</dt><dd>加快移动</dd></div><div><dt>点击「跳跃」</dt><dd>起跳，落地后可再次跳跃</dd></div><div><dt>点击「登船」</dt><dd>靠近停泊飞船后进入驾驶舱</dd></div><div><dt>右上「暂停」</dt><dd>暂停游戏，进入菜单</dd></div></dl>
             <p class="manual-tip">横屏游玩，按 16:9 设计并适配更宽屏幕。左手移动，右手转向或点击动作按钮，可同时操作。点击「全屏」可尝试隐藏浏览器工具栏并锁定横屏；不支持时，开启手机自动旋转后手动横置即可。退出全屏会自动暂停。</p>
           </div>
@@ -83,7 +82,7 @@
     <main id="launcher" class="launcher">
       <header class="launch-brand"><span>✳</span> ASTRAL <small>星间漫游</small></header>
       <div class="launch-orbit" aria-hidden="true"><span></span><i></i></div>
-      <section class="launch-content"><div class="launch-eyebrow">A SMALL SHIP. AN ENDLESS SKY.</div><h1>下一站，<br>星海之间。</h1><p>驾驶飞船自由漫游，降落陌生行星。<br>走出驾驶舱，寻找自己的地平线。</p><button id="launch-game" class="launch-button">开始游戏 <span>↗</span></button><div id="launch-status" class="launch-status" role="status" aria-live="polite">一艘飞船，三个世界。一段没有目的地的旅程。</div></section>
+      <section class="launch-content"><div class="launch-eyebrow">A SMALL SHIP. AN ENDLESS SKY.</div><h1>自由漫游，<br>星海之间。</h1><p>驾驶飞船自由漫游，降落陌生行星。<br>走出驾驶舱，寻找属于自己的地平线。</p><button id="launch-game" class="launch-button">开始游戏 <span>↗</span></button><div id="launch-status" class="launch-status" role="status" aria-live="polite">一艘飞船，三个世界。一段没有目的地的旅程。</div></section>
       <footer class="launch-footer"><span>EXPLORATION / 01</span><span>电脑 · 手机横屏</span></footer>
     </main>
     <script type="module" src="/src/bootstrap.ts"></script>

@@ -4,10 +4,10 @@ import { planets, surfaceRadius } from '../src/world.ts';
 const step = (f, seconds) => { for (let i = 0; i < seconds * 120; i++) f.update(1 / 120); };
 for (const planet of planets) {
   const f = new Flight();
-  f.navigate(planet); step(f, 45);
-  assert.equal(f.mode, 'manual', `navigation completes: ${planet.name}`);
-  assert.ok(f.speed < 1, 'navigation stops safely');
-  assert.ok(f.local.altitude > 25 && f.local.altitude < 45, 'navigation reaches low altitude');
+  const normal = f.position.clone().sub(planet.center).normalize();
+  f.position.copy(planet.center).addScaledVector(normal, surfaceRadius(planet, normal) + 38);
+  assert.equal(f.mode, 'manual', `flight remains under player control near ${planet.name}`);
+  assert.ok(f.speed < 1, 'craft starts at rest');
   f.interact(); assert.equal(f.mode, 'landing'); step(f, 25);
   assert.equal(f.mode, 'landed', `landing completes: ${planet.name}`);
   assert.ok(Math.abs(f.local.altitude - 2.8) < 0.01, 'craft rests above surface');
@@ -26,7 +26,5 @@ const manual = new Flight(); manual.keys.add('KeyW'); step(manual, 3);
 assert.ok(manual.speed > 40, 'thrust accelerates craft');
 manual.keys.clear(); manual.keys.add('Space'); step(manual, 3);
 assert.ok(manual.speed < .1, 'brake cancels inertia');
-manual.navigate(planets[0]);manual.keys.add('KeyA');manual.update(.01);
-assert.equal(manual.mode, 'manual', 'manual input cancels navigation');
-console.log('PASS: navigation, terrain clearance, landing and takeoff on all 3 planets; collision, thrust, braking, navigation cancellation.');
+console.log('PASS: manual flight, terrain clearance, landing and takeoff on all 3 planets; collision, thrust and braking.');
 

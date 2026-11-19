@@ -121,11 +121,6 @@ export class Expedition {
     if(this.onFoot){this.onNotice('请靠近飞船按 F 登船');return;}
     if(this.flight.mode==='landed')this.flight.interact();
   }
-  navigate(body:Planet){
-    if(this.onFoot){this.onNotice('请返回飞船后再启航');return;}
-    if(this.flight.mode==='landed'){this.onNotice('请先按 R 起飞');return;}
-    this.pendingExit=false;this.flight.navigate(body);
-  }
   update(dt:number){
     if(this.onFoot){this.walker.look(this.flight.mouseX,this.flight.mouseY);this.flight.mouseX=0;this.flight.mouseY=0;this.walker.update(dt,this.flight.position);}
     else{this.flight.update(dt);if(this.pendingExit&&this.flight.mode==='landed')this.disembark();}

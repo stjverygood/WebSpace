@@ -414,3 +414,4 @@
     display: none;
   }
 }
+.active-flight .planet-card p { display: block; }

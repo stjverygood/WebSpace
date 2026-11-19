@@ -23,11 +23,11 @@ const scene=new T.Scene();scene.background=new T.Color(0x050b13);
 const camera=new T.PerspectiveCamera(53,innerWidth/innerHeight,.15,18000);
 const expedition=new Expedition();
 const flight=expedition.flight;
-let active=false,paused=false,selected=0,drag=false,uiTime=0,noticeTimer=0,lastOnFoot=false;
+let active=false,paused=false,drag=false,uiTime=0,noticeTimer=0,lastOnFoot=false;
 let orientationBlocked=needsLandscape(innerWidth,innerHeight,touchLayout());
 let fullscreenTransition=false;
 let clockTime=0,last=performance.now();
-const labels={manual:'自由巡航',navigation:'自动导航',landing:'辅助降落',landed:'已着陆',takeoff:'起飞中'};
+const labels={manual:'自由巡航',landing:'辅助降落',landed:'已着陆',takeoff:'起飞中'};
 function notify(message:string){$('notice').textContent=message;$('notice').classList.add('visible');clearTimeout(noticeTimer);noticeTimer=window.setTimeout(()=>$('notice').classList.remove('visible'),4200);}
 expedition.onNotice=notify;
 
@@ -179,7 +179,7 @@ function showManual(platform:'desktop'|'mobile'){
   $('manual-desktop').classList.toggle('hidden',isMobile);$('manual-mobile').classList.toggle('hidden',!isMobile);
   $('manual-desktop-tab').setAttribute('aria-selected',String(!isMobile));$('manual-mobile-tab').setAttribute('aria-selected',String(isMobile));
 }
-function start(){active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('intro').classList.add('departed');$('intro').inert=true;$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();if(touchLayout())void fullscreen(false);lock();notify(touchLayout()?'左手摇杆移动 · 右侧滑动转向 · 右上角暂停':'W 推进 · 鼠标转向 · 空格制动 · N 自动前往目标');}
+function start(){active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('intro').classList.add('departed');$('intro').inert=true;$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();if(touchLayout())void fullscreen(false);lock();notify(touchLayout()?'左手摇杆移动 · 右侧滑动转向 · 右上角暂停':'W 推进 · 鼠标转向 · 空格制动 · 自由探索');}
 $('start').onclick=start;
 $('resume').onclick=resume;
 $('pause-button').onclick=pause;$('pause-shortcut').onclick=pause;
@@ -191,12 +191,7 @@ $('show-instructions').onclick=()=>{
 $('instructions-back').onclick=()=>{menuView();$('show-instructions').focus();};
 $('manual-desktop-tab').onclick=()=>showManual('desktop');$('manual-mobile-tab').onclick=()=>showManual('mobile');
 $('home').onclick=e=>{e.preventDefault();pause();};
-$('reset').onclick=()=>{release();expedition.reset();camera.position.copy(flight.position).add(new T.Vector3(0,7,24));selected=0;updateCard();paused=false;active=false;document.body.classList.remove('active-flight','on-foot','is-paused');$('intro').classList.remove('departed');$('intro').inert=false;$('pause-overlay').classList.add('hidden');$('reticle').classList.add('hidden');updateOrientation();$('start').focus();notify('已返回出发点');};
-function updateCard(){const p=planets[selected];$('planet-name').textContent=p.name;$('planet-code').textContent=p.code;$('planet-description').textContent=p.description;$('planet-type').textContent=p.type;$('planet-index').textContent=`0${selected+1} / 03`;$('marker-name').textContent=p.name;}
-$('next').onclick=()=>{selected=(selected+1)%planets.length;updateCard();};
-$('previous').onclick=()=>{selected=(selected+planets.length-1)%planets.length;updateCard();};
-function navigate(){if(paused||orientationBlocked)return;if(!active)start();if(flight.mode==='navigation'){flight.cancel();release();return;}expedition.navigate(planets[selected]);release();}
-$('approach').onclick=navigate;
+$('reset').onclick=()=>{release();expedition.reset();camera.position.copy(flight.position).add(new T.Vector3(0,7,24));paused=false;active=false;document.body.classList.remove('active-flight','on-foot','is-paused');$('intro').classList.remove('departed');$('intro').inert=false;$('pause-overlay').classList.add('hidden');$('reticle').classList.add('hidden');updateOrientation();$('start').focus();notify('已返回出发点');};
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
 addEventListener('mouseup',()=>drag=false);
 addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){flight.mouseX+=T.MathUtils.clamp(e.movementX,-80,80);flight.mouseY+=T.MathUtils.clamp(e.movementY,-80,80);}});
@@ -221,7 +216,6 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyF'){expedition.interact();return;}
   if(e.code==='KeyR'){expedition.takeoff();return;}
   if(e.code==='Space'&&expedition.onFoot){expedition.walker.jump();return;}
-  if(e.code==='KeyN'){if(flight.mode==='navigation')flight.cancel();else navigate();return;}
   keyboardKeys.add(e.code);
 });
 addEventListener('keyup',e=>keyboardKeys.delete(e.code));
@@ -295,12 +289,12 @@ function frame(now:number){
   if(uiTime>.08){
     uiTime=0;$('speed').textContent=onFoot?actorSpeed.toFixed(1):Math.round(actorSpeed).toString();
     Array.from(bars.children).forEach((el,i)=>el.classList.toggle('on',i<Math.ceil(actorSpeed/(onFoot?7:260)*12)));
-    const distance=Math.max(0,actorPosition.distanceTo(planets[selected].center)-planets[selected].radius);
-    $('target-distance').textContent=distance>=1000?`${(distance/1000).toFixed(2)} km`:`${distance.toFixed(0)} m`;
+    const nearby=onFoot?walker.body:local.body;
+    $('planet-name').textContent=nearby.name;$('planet-code').textContent=nearby.code;$('planet-description').textContent=nearby.description;$('planet-type').textContent=nearby.type;$('planet-gravity').textContent=`${nearby.gravity.toFixed(1)} m/s²`;
     $('flight-mode').textContent=paused?'已暂停':onFoot?(walker.grounded?'地表探索':'腾空中'):active?labels[flight.mode]:'等待启航';
     $('coordinates').textContent=`X ${actorPosition.x.toFixed(0).padStart(5,'0')}   Y ${actorPosition.y.toFixed(0).padStart(5,'0')}   Z ${actorPosition.z.toFixed(0).padStart(5,'0')}`;
     $('alt-label').innerHTML=onFoot?'LOCAL GRAVITY <span>当地重力</span>':local.altitude<180?'ALTITUDE <span>地表高度</span>':'FLIGHT LOG <span>航行记录</span>';
-    $('altitude').textContent=onFoot?`${walker.body.gravity.toFixed(1)} m/s² · ${(walker.body.gravity/9.8).toFixed(2)} g`:local.altitude<180?`${Math.max(0,local.altitude-2.8).toFixed(1)} m · ${local.body.name}`:flight.mode==='navigation'?`前往 ${flight.target.name} · 自动减速`:'一切未知，皆可抵达。';
+    $('altitude').textContent=onFoot?`${walker.body.gravity.toFixed(1)} m/s² · ${(walker.body.gravity/9.8).toFixed(2)} g`:local.altitude<180?`${Math.max(0,local.altitude-2.8).toFixed(1)} m · ${local.body.name}`:'一切未知，皆可抵达。';
     $('surface-info').classList.toggle('hidden',!onFoot);
     $('surface-planet').textContent=walker.body.name;
     $('surface-gravity').textContent=`GRAVITY ${walker.body.gravity.toFixed(1)} m/s² · ${(walker.body.gravity/9.8).toFixed(2)} g`;
@@ -315,11 +309,10 @@ function frame(now:number){
     $('touch-action').textContent=onFoot?'登船':'下船';
     $<HTMLButtonElement>('touch-action').disabled=onFoot?!expedition.canBoard:!canLand||flight.mode==='landing'||flight.mode==='takeoff';
     $('touch-launch').classList.toggle('hidden',onFoot||flight.mode!=='landed');
-    $('approach').innerHTML=flight.mode==='navigation'?'取消导航 <span>×</span>':'设为航向 <span>↗</span>';
     $('takeoff-prompt').classList.toggle('hidden',!active||onFoot||flight.mode!=='landed');
-    projection.copy(onFoot?flight.position:planets[selected].center).project(camera);
-    $('marker-name').textContent=onFoot?`飞船 · ${expedition.shipDistance.toFixed(0)} m`:planets[selected].name;
-    const visible=active&&projection.z<1&&projection.z>0&&Math.abs(projection.x)<.85&&Math.abs(projection.y)<.75&&(onFoot||distance>180);
+    projection.copy(flight.position).project(camera);
+    $('marker-name').textContent=`飞船 · ${expedition.shipDistance.toFixed(0)} m`;
+    const visible=active&&onFoot&&projection.z<1&&projection.z>0&&Math.abs(projection.x)<.85&&Math.abs(projection.y)<.75;
     $('target-marker').classList.toggle('hidden',!visible);
     if(visible){$('target-marker').style.left=`${(projection.x*.5+.5)*innerWidth}px`;$('target-marker').style.top=`${(-projection.y*.5+.5)*innerHeight}px`;}
   }
@@ -327,7 +320,7 @@ function frame(now:number){
   requestAnimationFrame(frame);
 }
 cameraLook.copy(flight.position).add(new T.Vector3(3.5,2.3,-28));
-updateCard();updateOrientation();requestAnimationFrame(frame);
+updateOrientation();requestAnimationFrame(frame);
 
 export function enterGame(){start();}
 

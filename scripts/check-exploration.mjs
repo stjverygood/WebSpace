@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import * as T from 'three';
 import { Expedition, Walker } from '../src/exploration.ts';
-import { planets, createPlanet, groundRadius, surfaceObstacles } from '../src/world.ts';
+import { planets, createPlanet, groundRadius, surfaceObstacles, surfaceRadius } from '../src/world.ts';
 const step=(actor,seconds,dt=1/120)=>{for(let t=0;t<seconds;t+=dt)actor.update(dt);};
 const results=[];
 for(const p of planets){
   createPlanet(p);
-  const e=new Expedition();e.navigate(p);step(e,45);
+  const e=new Expedition();const normal=e.flight.position.clone().sub(p.center).normalize();
+  e.flight.position.copy(p.center).addScaledVector(normal,surfaceRadius(p,normal)+12);
   e.interact();assert.ok(e.pendingExit,'F requests safe landing before exit');
   step(e,30);assert.ok(e.onFoot,`auto exit after landing on ${p.name}`);
   assert.equal(e.flight.mode,'landed');assert.equal(e.walker.body,p);
@@ -30,12 +31,13 @@ for(const p of planets){
   e.reset();assert.ok(!e.onFoot&&!e.pendingExit);assert.equal(e.flight.mode,'manual');
 }
 assert.ok(results[1].apex>results[0].apex&&results[0].apex>results[2].apex,'lower gravity gives higher jumps');
-const e=new Expedition();e.navigate(planets[0]);step(e,45);e.interact();step(e,30);
+const e=new Expedition();const spawnNormal=e.flight.position.clone().sub(planets[0].center).normalize();
+e.flight.position.copy(planets[0].center).addScaledVector(spawnNormal,surfaceRadius(planets[0],spawnNormal)+12);e.interact();step(e,30);
 const p=e.walker.body;
 let normal=e.walker.normal.clone().applyAxisAngle(new T.Vector3(1,0,0),.4);
 e.walker.spawn(p,p.center.clone().addScaledVector(normal,groundRadius(p,normal)),e.walker.forward);
 assert.ok(!e.canBoard);e.interact();assert.ok(e.onFoot,'cannot board remotely');
-e.navigate(planets[1]);assert.ok(e.onFoot&&e.flight.mode==='landed','cannot remotely fly parked ship');
+assert.ok(e.onFoot&&e.flight.mode==='landed','ship remains parked during surface exploration');
 const w=new Walker();
 for(let i=0;i<100;i++){
   normal=new T.Vector3(Math.cos(i*2.4),.5,Math.sin(i*2.4)).normalize();
