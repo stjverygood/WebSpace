@@ -21,7 +21,7 @@ send('universe','pointercancel',3);send('universe','pointermove',3,150,230);asse
 send('touch-forward','pointercancel',2);assert.equal(controls.keys.size,0,'pointer cancellation releases thrust');
 onFoot=true;send('touch-boost','pointerdown',4);assert.ok(controls.keys.has('ShiftLeft'));assert.ok(!controls.keys.has('KeyW'),'sprint does not force walking');
 send('joystick','pointerdown',5,100,19);assert.ok(controls.keys.has('KeyD'));assert.ok(controls.keys.has('KeyW'));
-send('touch-forward','pointerdown',8);assert.ok(!controls.keys.has('KeyW'),'ship throttle is inert while walking');
+const walkingKeys=[...controls.keys].sort();send('touch-forward','pointerdown',8);assert.deepEqual([...controls.keys].sort(),walkingKeys,'ship throttle is inert while walking');
 send('joystick','lostpointercapture',5);assert.deepEqual([...controls.keys],['ShiftLeft'],'lost joystick capture preserves the sprint finger');
 controls.reset();assert.equal(controls.keys.size,0);assert.equal(elements.get('joystick-thumb').style.transform,'translate(0px,0px)');
 enabled=false;send('joystick','pointerdown',6,59,0);send('touch-boost','pointerdown',7);elements.get('touch-action').onclick();assert.equal(controls.keys.size,0);assert.equal(interactions,0,'paused controls are inert');
