@@ -72,6 +72,7 @@ for(const p of planets)scene.add(createPlanet(p));
 
 const sunPosition=new T.Vector3(0,0,0);
 const sun=new T.Mesh(new T.SphereGeometry(560,32,24),new T.MeshBasicMaterial({color:0xff302f}));sun.position.copy(sunPosition);scene.add(sun);
+sun.name='太阳';
 const glowCanvas=document.createElement('canvas');glowCanvas.width=128;glowCanvas.height=128;
 const ctx=glowCanvas.getContext('2d')!;const gradient=ctx.createRadialGradient(64,64,0,64,64,64);
 gradient.addColorStop(0,'rgba(255,120,110,.82)');gradient.addColorStop(.08,'rgba(255,60,56,.58)');gradient.addColorStop(.3,'rgba(236,38,48,.2)');gradient.addColorStop(1,'rgba(210,24,38,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
