@@ -7,6 +7,7 @@
     <title>ASTRAL — 星间漫游</title>
   </head>
   <body>
+    <div id="game-root" hidden>
     <canvas id="universe" aria-label="太空漫游游戏" tabindex="0"></canvas>
     <div class="vignette"></div>
     <header class="topbar">
@@ -78,6 +79,13 @@
       <div class="rotate-card"><div class="eyebrow">A WIDER HORIZON</div><div class="rotate-illustration" aria-hidden="true"><span class="rotate-phone"></span><span class="rotate-arrow">↻</span></div><h2 id="rotate-title">把手机横过来。</h2><p>更宽的星海，留给双手探索。</p><button id="rotate-fullscreen" class="primary">尝试全屏横屏 <span>⛶</span></button><p id="rotate-note" class="rotate-note" role="status">请开启手机自动旋转，横置后即可游玩。<br>浏览器不支持方向锁定时，可手动旋转手机。</p><button id="rotate-menu" class="reset-button">菜单与操作说明</button></div>
     </div>
     <div id="error" class="error hidden"></div>
-    <script type="module" src="/src/main.ts"></script>
+    </div>
+    <main id="launcher" class="launcher">
+      <header class="launch-brand"><span>✳</span> ASTRAL <small>星间漫游</small></header>
+      <div class="launch-orbit" aria-hidden="true"><span></span><i></i></div>
+      <section class="launch-content"><div class="launch-eyebrow">A SMALL SHIP. AN ENDLESS SKY.</div><h1>下一站，<br>星海之间。</h1><p>驾驶飞船自由漫游，降落陌生行星。<br>走出驾驶舱，寻找自己的地平线。</p><button id="launch-game" class="launch-button">开始游戏 <span>↗</span></button><div id="launch-status" class="launch-status" role="status" aria-live="polite">一艘飞船，三个世界。一段没有目的地的旅程。</div></section>
+      <footer class="launch-footer"><span>EXPLORATION / 01</span><span>电脑 · 手机横屏</span></footer>
+    </main>
+    <script type="module" src="/src/bootstrap.ts"></script>
   </body>
 </html>

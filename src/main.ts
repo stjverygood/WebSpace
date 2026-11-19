@@ -329,5 +329,7 @@ function frame(now:number){
 cameraLook.copy(flight.position).add(new T.Vector3(3.5,2.3,-28));
 updateCard();updateOrientation();requestAnimationFrame(frame);
 
+export function enterGame(){start();}
+
 // A read-only snapshot supports reproducible diagnostics without changing gameplay.
 Object.defineProperty(window,'astral',{value:{snapshot:()=>({mode:expedition.onFoot?'on-foot':flight.mode,active,paused,speed:expedition.onFoot?expedition.walker.speed:flight.speed,altitude:expedition.onFoot?expedition.walker.altitude:flight.local.altitude,gravity:expedition.onFoot?expedition.walker.body.gravity:flight.local.body.gravity,grounded:expedition.walker.grounded,shipDistance:expedition.shipDistance,planet:expedition.onFoot?expedition.walker.body.name:flight.local.body.name,position:(expedition.onFoot?expedition.walker.position:flight.position).toArray(),renderer:renderer.info.render})},writable:false});
