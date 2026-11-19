@@ -18,8 +18,7 @@ function loadSettings():GameSettings{
   catch{return{...DEFAULT_SETTINGS};}
 }
 const settings=loadSettings();
-let cameraOrbitYaw=0,cameraOrbitPitch=0,forwardWasHeld=false;
-const cameraFrame=new T.Quaternion(),cameraFrameTarget=new T.Quaternion();
+let cameraOrbitYaw=0,cameraOrbitPitch=0;
 const touchLayout=()=>matchMedia('(any-pointer: coarse), (max-width: 700px), (max-width: 1024px) and (max-height: 600px)').matches;
 document.body.classList.toggle('touch-layout',touchLayout());
 const keyboardKeys=new Set<string>();
@@ -107,6 +106,7 @@ function buildShip(){
   return {ship,engines};
 }
 const {ship,engines}=buildShip();scene.add(ship);
+const shipCameraTarget=new T.Object3D();ship.add(shipCameraTarget);
 const astronaut=createAstronaut();scene.add(astronaut.root);astronaut.root.visible=false;
 const contactShadow=new T.Mesh(new T.CircleGeometry(.6,24),new T.MeshBasicMaterial({color:0x07191d,transparent:true,opacity:.2,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));scene.add(contactShadow);contactShadow.visible=false;
 const motionGeometry=new T.BufferGeometry();const motionPositions=new Float32Array(80*6);motionGeometry.setAttribute('position',new T.BufferAttribute(motionPositions,3));
@@ -126,7 +126,7 @@ function initAudio(){
 $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.resume();$('sound-state').textContent=soundEnabled?'开':'关';$('sound').setAttribute('aria-pressed',String(soundEnabled));}catch{notify('此浏览器暂不支持音频');}};
 
 const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,look:(x,y)=>{if(expedition.onFoot){flight.mouseX-=x*settings.viewSensitivity;flight.mouseY-=y*settings.viewSensitivity;}else{cameraOrbitYaw-=x*.0018*settings.viewSensitivity;cameraOrbitPitch=T.MathUtils.clamp(cameraOrbitPitch-y*.0018*settings.viewSensitivity,-.65,.65);}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
-function release(){drag=false;forwardWasHeld=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
+function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
   const blocked=needsLandscape(innerWidth,innerHeight,touchLayout());
   if(blocked&&!orientationBlocked)release();
@@ -224,7 +224,7 @@ $('show-settings').onclick=()=>{
 $('settings-back').onclick=()=>{menuView();$('show-settings').focus();};
 $('manual-desktop-tab').onclick=()=>showManual('desktop');$('manual-mobile-tab').onclick=()=>showManual('mobile');
 $('home').onclick=e=>{e.preventDefault();pause();};
-$('reset').onclick=()=>{release();expedition.reset();cameraOrbitYaw=0;cameraOrbitPitch=0;cameraFrame.identity();cameraFrameTarget.identity();camera.position.copy(flight.position).add(new T.Vector3(0,7,24));paused=false;active=false;document.body.classList.remove('active-flight','on-foot','is-paused');$('intro').classList.remove('departed');$('intro').inert=false;$('pause-overlay').classList.add('hidden');$('reticle').classList.add('hidden');updateOrientation();$('start').focus();notify('已返回出发点');};
+$('reset').onclick=()=>{release();expedition.reset();cameraOrbitYaw=0;cameraOrbitPitch=0;camera.position.copy(flight.position).add(new T.Vector3(0,7,24));paused=false;active=false;document.body.classList.remove('active-flight','on-foot','is-paused');$('intro').classList.remove('departed');$('intro').inert=false;$('pause-overlay').classList.add('hidden');$('reticle').classList.add('hidden');updateOrientation();$('start').focus();notify('已返回出发点');};
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
 addEventListener('mouseup',()=>drag=false);
 addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){flight.mouseX+=T.MathUtils.clamp(e.movementX,-80,80);flight.mouseY+=T.MathUtils.clamp(e.movementY,-80,80);}});
@@ -267,9 +267,6 @@ function frame(now:number){
   if(!paused&&!orientationBlocked){clockTime+=dt;if(active){
     flight.keys.clear();for(const code of keyboardKeys)flight.keys.add(code);for(const code of mobile.keys)flight.keys.add(code);
     const steering=mobile.steering;flight.joystickX=steering.x*settings.joystickSensitivity;flight.joystickY=steering.y*settings.joystickSensitivity;
-    const advancing=!expedition.onFoot&&flight.mode==='manual'&&flight.keys.has('KeyW');
-    if(advancing&&!forwardWasHeld){cameraFrameTarget.copy(flight.rotation);cameraOrbitYaw=0;cameraOrbitPitch=0;}
-    forwardWasHeld=advancing;
     expedition.update(dt);
   }}
   if(lastOnFoot!==expedition.onFoot){keyboardKeys.clear();mobile.reset();flight.keys.clear();lastOnFoot=expedition.onFoot;}
@@ -297,11 +294,11 @@ function frame(now:number){
   const cameraRear=active?Math.sqrt(Math.max(0,cameraDistance*cameraDistance-cameraHeight*cameraHeight)):23;
   const cameraOffset=new T.Vector3(0,cameraHeight,cameraRear);
   if(active&&!onFoot)cameraOffset.applyEuler(new T.Euler(cameraOrbitPitch,cameraOrbitYaw,0,'YXZ'));
-  if(!paused&&!orientationBlocked)cameraFrame.slerp(cameraFrameTarget,1-Math.exp(-dt*5));
-  const cameraPivot=ship.position.clone().add(new T.Vector3(0,active?.8:2.3,0));
-  const desiredLook=active?cameraPivot.clone():ship.position.clone().add(new T.Vector3(3.5,2.3,-28).applyQuaternion(flight.rotation));
-  const desiredCamera=cameraOffset.applyQuaternion(active?cameraFrame:flight.rotation).add(active?cameraPivot:ship.position);
-  const cameraUp=onFoot?walker.normal:new T.Vector3(0,1,0).applyQuaternion(active?cameraFrame:flight.rotation);
+  shipCameraTarget.position.set(active?0:3.5,active?.8:2.3,active?0:-28);
+  ship.updateMatrixWorld(true);
+  const desiredLook=shipCameraTarget.getWorldPosition(new T.Vector3());
+  const desiredCamera=cameraOffset.applyQuaternion(flight.rotation).add(active?desiredLook:ship.position);
+  const cameraUp=onFoot?walker.normal:new T.Vector3(0,1,0).applyQuaternion(flight.rotation);
   if(onFoot){
     desiredLook.copy(walker.position).addScaledVector(cameraUp,1.25);
     const footCameraDistance=settings.cameraDistance;
