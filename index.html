@@ -12,7 +12,6 @@
     <div class="vignette"></div>
     <header class="topbar">
       <a class="brand" href="#" id="home" aria-label="暂停"><span class="brand-icon">✳</span> ASTRAL<span class="brand-divider"></span><span class="brand-sub">星间漫游</span></a>
-      <div class="system-status"><i></i> KEPLER SYSTEM <span>开普勒恒星系</span></div>
       <button class="icon-button" id="sound" title="切换声音" aria-label="切换声音">声音 <span id="sound-state">关</span></button>
       <button class="icon-button fullscreen-control" id="fullscreen-button" title="进入全屏" aria-label="进入全屏"><span class="fullscreen-label">全屏</span><span>⛶</span></button>
       <button class="icon-button pause-control" id="pause-button" title="暂停菜单" aria-label="暂停游戏">暂停 <span>Ⅱ</span></button>
@@ -27,21 +26,18 @@
       <div class="edition">EXPLORATION BUILD <span>01 / 自由探索</span></div>
     </main>
     <aside class="planet-card" id="planet-card">
-      <div class="eyebrow">最近星球 · 环境资料</div>
-      <div class="planet-heading"><h2 id="planet-name">苍蓝星</h2><span class="planet-code" id="planet-code">AURELIA · 04B</span></div>
-      <p id="planet-description">海洋、山脉，以及尚未被命名的远方。</p>
+      <div class="planet-heading"><h2 id="planet-name">苍蓝星</h2></div>
       <div class="planet-data"><div><label>地表</label><strong id="planet-type">海洋 / 山脉</strong></div><div><label>重力</label><strong class="mint" id="planet-gravity">9.8 m/s²</strong></div></div>
     </aside>
-    <div class="flight-label" id="flight-label"><span class="pulse"></span><span id="flight-mode">自由巡航</span><span class="flight-sector">SECTOR 07 : 24</span></div>
     <div id="reticle" class="reticle hidden"><div></div><span></span></div>
     <div id="target-marker" class="target-marker hidden"><span>⌖</span><label id="marker-name">苍蓝星</label></div>
     <div id="notice" class="notice" role="status"></div>
-    <aside id="surface-info" class="surface-info hidden"><div class="eyebrow">ON THE SURFACE</div><h2 id="surface-planet">苍蓝星</h2><div id="surface-gravity" class="surface-gravity">9.8 m/s²</div><p id="surface-state">靴下是一个新的世界。</p><div class="ship-readout"><span id="ship-bearing" class="ship-symbol">△</span><span>停泊飞船</span><strong id="ship-distance">0 m</strong></div><small>WASD 行走 · SHIFT 奔跑 · SPACE 跳跃</small></aside>
+    <aside id="surface-info" class="surface-info hidden"><h2 id="surface-planet">苍蓝星</h2><div id="surface-gravity" class="surface-gravity">9.8 m/s²</div><div class="ship-readout"><span id="ship-bearing" class="ship-symbol">△</span><span>飞船</span><strong id="ship-distance">0 m</strong></div><small>WASD 行走 · SHIFT 奔跑 · SPACE 跳跃</small></aside>
     <button id="landing-prompt" class="landing-prompt hidden"><span class="key">F</span><span id="landing-text">降落并下船</span></button>
     <button id="takeoff-prompt" class="takeoff-prompt hidden"><span class="key">R</span> 启动起飞</button>
     <footer class="hud">
       <div class="telemetry"><div class="telemetry-title">VELOCITY <span>航行速度</span></div><div class="speed-number"><span id="speed">0</span><small>m/s</small><div class="speed-bars" id="speed-bars"></div></div></div>
-      <div class="coordinates"><div class="telemetry-title" id="alt-label">FLIGHT LOG <span>航行记录</span></div><strong id="altitude">一切未知，皆可抵达。</strong><div id="coordinates">X 0000 &nbsp; Y 0000 &nbsp; Z 0000</div></div>
+      <div class="coordinates hidden" id="altitude-readout"><strong id="altitude"></strong></div>
       <div class="bottom-controls"><span><kbd id="boost-key">W / S</kbd> <span id="boost-label">推进</span></span><span id="space-control" class="hidden"><kbd>SPACE</kbd> <span id="space-label">跳跃</span></span><span><kbd>F</kbd> <span id="interact-label">下船</span></span><button id="pause-shortcut"><kbd>ESC</kbd> 暂停</button></div>
     </footer>
     <div id="pause-overlay" class="modal-backdrop hidden">
@@ -81,8 +77,7 @@
       </section>
     </div>
     <div id="touch-controls" class="touch-controls" aria-label="手机游戏控制">
-      <div class="joystick-area"><span id="joystick-label">机身方向</span><div id="joystick" class="joystick" role="group" aria-label="虚拟方向摇杆"><span class="joystick-axis">＋</span><div id="joystick-thumb" class="joystick-thumb"></div></div></div>
-      <div class="look-hint">滑动右侧 · 调整视角</div>
+      <div class="joystick-area"><div id="joystick" class="joystick" role="group" aria-label="虚拟方向摇杆"><span class="joystick-axis">＋</span><div id="joystick-thumb" class="joystick-thumb"></div></div></div>
       <div class="touch-right-panel"><div class="touch-throttle ship-only"><button id="touch-reverse" aria-label="后退推进">后退</button><button id="touch-forward" aria-label="前进加速">前进</button></div><div class="touch-actions"><button id="touch-boost" class="foot-only">奔跑</button><button id="touch-jump" class="foot-only">跳跃</button><button id="touch-action" class="touch-accent">下船</button><button id="touch-launch" class="hidden">起飞</button></div></div>
     </div>
     <div id="rotate-overlay" class="rotate-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rotate-title">

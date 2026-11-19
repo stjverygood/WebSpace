@@ -36,7 +36,6 @@ let active=false,paused=false,drag=false,uiTime=0,noticeTimer=0,lastOnFoot=false
 let orientationBlocked=needsLandscape(innerWidth,innerHeight,touchLayout());
 let fullscreenTransition=false;
 let clockTime=0,last=performance.now();
-const labels={manual:'自由巡航',landing:'辅助降落',landed:'已着陆',takeoff:'起飞中'};
 function notify(message:string){$('notice').textContent=message;$('notice').classList.add('visible');clearTimeout(noticeTimer);noticeTimer=window.setTimeout(()=>$('notice').classList.remove('visible'),4200);}
 expedition.onNotice=notify;
 
@@ -271,7 +270,6 @@ function frame(now:number){
   }}
   if(lastOnFoot!==expedition.onFoot){keyboardKeys.clear();mobile.reset();flight.keys.clear();lastOnFoot=expedition.onFoot;}
   const onFoot=expedition.onFoot,walker=expedition.walker;
-  const actorPosition=onFoot?walker.position:flight.position;
   const actorSpeed=onFoot?walker.speed:flight.speed;
   const local=onFoot?{...nearest(walker.position),altitude:walker.altitude}:flight.local;
   const near=T.MathUtils.clamp(1-local.altitude/110,0,1);
@@ -336,22 +334,19 @@ function frame(now:number){
     uiTime=0;$('speed').textContent=onFoot?actorSpeed.toFixed(1):Math.round(actorSpeed).toString();
     Array.from(bars.children).forEach((el,i)=>el.classList.toggle('on',i<Math.ceil(actorSpeed/(onFoot?7:260)*12)));
     const nearby=onFoot?walker.body:local.body;
-    $('planet-name').textContent=nearby.name;$('planet-code').textContent=nearby.code;$('planet-description').textContent=nearby.description;$('planet-type').textContent=nearby.type;$('planet-gravity').textContent=`${nearby.gravity.toFixed(1)} m/s²`;
-    $('flight-mode').textContent=paused?'已暂停':onFoot?(walker.grounded?'地表探索':'腾空中'):active?labels[flight.mode]:'等待启航';
-    $('coordinates').textContent=`X ${actorPosition.x.toFixed(0).padStart(5,'0')}   Y ${actorPosition.y.toFixed(0).padStart(5,'0')}   Z ${actorPosition.z.toFixed(0).padStart(5,'0')}`;
-    $('alt-label').innerHTML=onFoot?'LOCAL GRAVITY <span>当地重力</span>':local.altitude<180?'ALTITUDE <span>地表高度</span>':'FLIGHT LOG <span>航行记录</span>';
-    $('altitude').textContent=onFoot?`${walker.body.gravity.toFixed(1)} m/s² · ${(walker.body.gravity/9.8).toFixed(2)} g`:local.altitude<180?`${Math.max(0,local.altitude-2.8).toFixed(1)} m · ${local.body.name}`:'一切未知，皆可抵达。';
+    $('planet-name').textContent=nearby.name;$('planet-type').textContent=nearby.type;$('planet-gravity').textContent=`${nearby.gravity.toFixed(1)} m/s²`;
+    $('altitude-readout').classList.toggle('hidden',onFoot||local.altitude>=180);
+    $('altitude').textContent=`${Math.max(0,local.altitude-2.8).toFixed(1)} m`;
     $('surface-info').classList.toggle('hidden',!onFoot);
     $('surface-planet').textContent=walker.body.name;
     $('surface-gravity').textContent=`GRAVITY ${walker.body.gravity.toFixed(1)} m/s² · ${(walker.body.gravity/9.8).toFixed(2)} g`;
     if(onFoot){const toShip=flight.position.clone().sub(walker.position);const right=new T.Vector3().crossVectors(walker.forward,walker.normal);$('ship-bearing').style.transform=`rotate(${Math.atan2(toShip.dot(right),toShip.dot(walker.forward))*180/Math.PI}deg)`;}
     $('ship-distance').textContent=`${expedition.shipDistance.toFixed(0)} m`;
-    $('surface-state').textContent=walker.grounded?'靴下是一个新的世界。':`离地 ${Math.max(0,walker.altitude-.04).toFixed(1)} m`;
     $('boost-key').textContent=onFoot?'SHIFT':'W / S';$('boost-label').textContent=onFoot?'奔跑':'推进';$('space-label').textContent='跳跃';$('space-control').classList.toggle('hidden',!onFoot);$('interact-label').textContent=onFoot?'登船':'下船';
     const canLand=active&&(onFoot?expedition.canBoard:(local.altitude<90&&flight.speed<20||flight.mode==='landed'));
     $('landing-prompt').classList.toggle('hidden',!canLand||!onFoot&&(flight.mode==='landing'||flight.mode==='takeoff'));
     $('landing-text').textContent=onFoot?'登上飞船':flight.mode==='landed'?'离开飞船 · 地表探索':'降落并下船';
-    $('touch-boost').textContent='奔跑';$('joystick-label').textContent=onFoot?'移动':'机身方向';
+    $('touch-boost').textContent='奔跑';
     $('touch-action').textContent=onFoot?'登船':'下船';
     $<HTMLButtonElement>('touch-action').disabled=onFoot?!expedition.canBoard:!canLand||flight.mode==='landing'||flight.mode==='takeoff';
     $('touch-launch').classList.toggle('hidden',onFoot||flight.mode!=='landed');
