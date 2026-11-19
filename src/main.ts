@@ -2,7 +2,7 @@ import * as T from 'three';
 import { createPlanet, nearest, planets, groundRadius, surfaceRadius } from './world';
 import { Expedition, createAstronaut } from './exploration';
 import { MobileControls } from './mobile';
-import { enterLandscape, needsLandscape } from './display';
+import { enterPortrait, needsPortrait } from './display';
 import './style.css';
 import './surface.css';
 import './responsive.css';
@@ -33,7 +33,7 @@ const camera=new T.PerspectiveCamera(53,innerWidth/innerHeight,.15,18000);
 const expedition=new Expedition();
 const flight=expedition.flight;
 let active=false,paused=false,drag=false,uiTime=0,noticeTimer=0,lastOnFoot=false;
-let orientationBlocked=needsLandscape(innerWidth,innerHeight,touchLayout());
+let orientationBlocked=needsPortrait(innerWidth,innerHeight,touchLayout());
 let fullscreenTransition=false;
 let clockTime=0,last=performance.now();
 function notify(message:string){$('notice').textContent=message;$('notice').classList.add('visible');clearTimeout(noticeTimer);noticeTimer=window.setTimeout(()=>$('notice').classList.remove('visible'),4200);}
@@ -125,7 +125,7 @@ $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.r
 const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,look:(x,y)=>{if(expedition.onFoot){flight.mouseX-=x*settings.viewSensitivity;flight.mouseY-=y*settings.viewSensitivity;}else{cameraLookIdle=0;cameraOrbitYaw-=x*.0018*settings.viewSensitivity;cameraOrbitPitch=T.MathUtils.clamp(cameraOrbitPitch-y*.0018*settings.viewSensitivity,-.65,.65);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,6,18);const input=$<HTMLInputElement>('setting-distance');input.value=String(settings.cameraDistance);$<HTMLOutputElement>('setting-distance-value').value=`${settings.cameraDistance.toFixed(1)} m`;try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
 function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
-  const blocked=needsLandscape(innerWidth,innerHeight,touchLayout());
+  const blocked=needsPortrait(innerWidth,innerHeight,touchLayout());
   if(blocked&&!orientationBlocked)release();
   orientationBlocked=blocked;
   document.body.classList.toggle('needs-rotation',blocked);
@@ -144,13 +144,13 @@ async function fullscreen(showHint=true){
   try{
     const root=document.documentElement as HTMLElement&{webkitRequestFullscreen?:()=>Promise<void>|void};
     const orientation=screen.orientation as ScreenOrientation&{lock?:(value:string)=>Promise<void>};
-    const result=await enterLandscape({
+    const result=await enterPortrait({
       isFullscreen,
       requestFullscreen:root.requestFullscreen?()=>root.requestFullscreen({navigationUI:'hide'}):root.webkitRequestFullscreen?()=>root.webkitRequestFullscreen!():undefined,
-      lockLandscape:touchLayout()&&orientation?.lock?()=>orientation.lock!('landscape'):undefined,
+      lockLandscape:touchLayout()&&orientation?.lock?()=>orientation.lock!('portrait'):undefined,
     });
     if(showHint){
-      const message=!result.fullscreen?(touchLayout()?'浏览器暂不支持全屏，请开启自动旋转并手动横置手机。':'浏览器暂不支持全屏，可继续在当前窗口游玩。'):touchLayout()&&!result.locked?(orientationBlocked?'已进入全屏，请手动横置手机；若未旋转，请关闭系统方向锁定。':'已进入全屏；浏览器不支持锁定方向，保持横屏即可游玩。'):'已进入全屏';
+      const message=!result.fullscreen?(touchLayout()?'浏览器暂不支持全屏，请开启自动旋转并手动竖置手机。':'浏览器暂不支持全屏，可继续在当前窗口游玩。'):touchLayout()&&!result.locked?(orientationBlocked?'已进入全屏，请手动竖置手机；若未旋转，请关闭系统方向锁定。':'已进入全屏；浏览器不支持锁定方向，保持竖屏即可游玩。'):'已进入全屏';
       $('rotate-note').textContent=message;
       if(!orientationBlocked)notify(message);
     }
