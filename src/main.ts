@@ -173,7 +173,7 @@ function initAudio(){
 }
 $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.resume();$('sound').textContent=`声音：${soundEnabled?'开':'关'}`;$('sound').setAttribute('aria-pressed',String(soundEnabled));}catch{notify('此浏览器暂不支持音频');}};
 
-const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw-=x*.003*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+y*.003*settings.viewSensitivity,-.08,.72);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
+const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw-=x*.004*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+y*.004*settings.viewSensitivity,-.08,.72);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
 function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
   const blocked=needsPortrait(innerWidth,innerHeight,touchLayout());
@@ -270,7 +270,7 @@ $('return-menu').onclick=()=>{
 };
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
 addEventListener('mouseup',()=>drag=false);
-addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){const dx=T.MathUtils.clamp(e.movementX,-80,80),dy=T.MathUtils.clamp(e.movementY,-80,80);if(expedition.inVehicle){vehicleCameraYaw-=dx*.0018*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+dy*.0018*settings.viewSensitivity,-.08,.72);}else{flight.mouseX+=dx;flight.mouseY+=dy;}}});
+addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){const dx=T.MathUtils.clamp(e.movementX,-80,80),dy=T.MathUtils.clamp(e.movementY,-80,80);if(expedition.inVehicle){vehicleCameraYaw-=dx*.0024*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+dy*.0024*settings.viewSensitivity,-.08,.72);}else{flight.mouseX+=dx;flight.mouseY+=dy;}}});
 document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement){drag=false;flight.mouseX=0;flight.mouseY=0;}});
 addEventListener('keydown',e=>{
   if(orientationBlocked&&!paused&&e.code==='Tab'){
@@ -357,9 +357,9 @@ function frame(now:number){
   // A chase camera must remain above terrain even when the player flies towards it.
   for(const p of planets){const radial=cameraPosition.clone().sub(p.center);const direction=radial.clone().normalize();const onSurface=onFoot||inVehicle;const safe=(onSurface?groundRadius(p,direction):surfaceRadius(p,direction))+(onSurface?.65:4);if(radial.length()<safe)cameraPosition.copy(p.center).addScaledVector(direction,safe);}
   const speedResponse=Math.min(flight.speed/80,1);
-  const positionFollow=onFoot?8:inVehicle?10:14+speedResponse*4;
-  const lookFollow=onFoot?9:inVehicle?11:16+speedResponse*2;
-  if(!paused&&!orientationBlocked){camera.position.lerp(cameraPosition,1-Math.exp(-dt*positionFollow));if(onFoot||inVehicle){cameraLook.lerp(desiredLook,1-Math.exp(-dt*lookFollow));worldUp.lerp(cameraUp,1-Math.exp(-dt*6));}else{cameraLook.copy(desiredLook);worldUp.copy(cameraUp);}}
+  const positionFollow=onFoot?22:inVehicle?24:28+speedResponse*5;
+  const lookFollow=onFoot?26:inVehicle?28:30+speedResponse*3;
+  if(!paused&&!orientationBlocked){camera.position.lerp(cameraPosition,1-Math.exp(-dt*positionFollow));if(onFoot||inVehicle){cameraLook.lerp(desiredLook,1-Math.exp(-dt*lookFollow));worldUp.lerp(cameraUp,1-Math.exp(-dt*12));}else{cameraLook.copy(desiredLook);worldUp.copy(cameraUp);}}
   // Clamp the interpolated camera too, so entering a hillside never clips through it.
   if(onFoot||inVehicle){const body=onFoot?walker.body:groundVehicle.body;const radial=camera.position.clone().sub(body.center);const direction=radial.clone().normalize();const safe=groundRadius(body,direction)+.65;if(radial.length()<safe)camera.position.copy(body.center).addScaledVector(direction,safe);}
   camera.up.copy(worldUp).normalize();camera.lookAt(cameraLook);

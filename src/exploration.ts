@@ -89,7 +89,7 @@ export class Walker {
     this.forward.normalize();this.facing.copy(this.forward);this.velocity.set(0,0,0);
     this.verticalSpeed=0;this.pitch=.25;this.grounded=true;this.jumpBuffer=0;this.coyoteTime=.1;this.travel=0;
   }
-  look(x:number,y:number){this.forward.applyAxisAngle(this.normal,-x*.0025).normalize();this.pitch=T.MathUtils.clamp(this.pitch+y*.0025,-.3,1.05);}
+  look(x:number,y:number){this.forward.applyAxisAngle(this.normal,-x*.0032).normalize();this.pitch=T.MathUtils.clamp(this.pitch+y*.0032,-.3,1.05);}
   jump(){this.jumpBuffer=.14;}
   update(dt:number,shipPosition?:T.Vector3,vehiclePosition?:T.Vector3){
     dt=Math.min(dt,.04);
