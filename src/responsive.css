@@ -23,14 +23,9 @@ button {
   backdrop-filter: blur(8px);
   font-size: 11px;
 }
-.pause-control span {
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: none;
-  font-size: 13px;
-  color: var(--mint);
-  line-height: 1;
+.pause-control:focus-visible {
+  outline: none;
+  border-color: var(--mint);
 }
 .topbar {
   justify-content: flex-end;
