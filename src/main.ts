@@ -83,23 +83,47 @@ for(let i=0;i<190;i++){
 
 function buildGroundVehicle(){
   const vehicle=new T.Group();
-  const shell=new T.MeshStandardMaterial({color:0xc1c5b5,roughness:.68,metalness:.25,flatShading:true});
-  const trim=new T.MeshStandardMaterial({color:0x263b40,roughness:.48,metalness:.5,flatShading:true});
-  const glass=new T.MeshStandardMaterial({color:0x39717a,roughness:.24,metalness:.48,flatShading:true});
-  const light=new T.MeshStandardMaterial({color:0xb8e6ce,emissive:0x5dbaa0,emissiveIntensity:.7});
+  const shell=new T.MeshStandardMaterial({color:0xc9cbc5,roughness:.26,metalness:.82,flatShading:true});
+  const trim=new T.MeshStandardMaterial({color:0x20272a,roughness:.52,metalness:.48,flatShading:true});
+  const glass=new T.MeshStandardMaterial({color:0x172c34,roughness:.2,metalness:.62,flatShading:true});
+  const light=new T.MeshStandardMaterial({color:0xc8fff1,emissive:0x73d6bc,emissiveIntensity:.8});
   const box=(size:number[],position:number[],material:T.Material)=>{const mesh=new T.Mesh(new T.BoxGeometry(...size as [number,number,number]),material);mesh.position.fromArray(position);vehicle.add(mesh);return mesh;};
-  box([2,.52,3.6],[0,.86,0],shell);
-  box([1.48,.76,1.62],[0,1.48,-.32],trim);
-  box([1.24,.46,1.08],[0,1.5,-.39],glass);
-  box([2.15,.22,.24],[0,.73,-1.79],trim);box([2.15,.22,.24],[0,.73,1.79],trim);
+  const panel=(points:number[][],material:T.Material)=>{
+    const vertices:number[]=[];for(let i=1;i<points.length-1;i++)vertices.push(...points[0],...points[i],...points[i+1]);
+    const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();
+    const faceMaterial=material.clone();faceMaterial.side=T.DoubleSide;const mesh=new T.Mesh(geometry,faceMaterial);vehicle.add(mesh);return mesh;
+  };
+  const base=[[-1.05,.55,-2.5],[1.05,.55,-2.5],[1.18,.55,2.35],[-1.18,.55,2.35]];
+  panel(base,trim);
+  box([2.18,.3,4.85],[0,.66,0],trim);
+  // The wedge shaped stainless shell and steep windshield give the truck its distinct profile.
+  panel([[-.98,.82,-2.48],[.98,.82,-2.48],[1.06,1.02,-1.12],[-1.06,1.02,-1.12]],shell);
+  panel([[-.98,.56,-2.48],[.98,.56,-2.48],[.98,.82,-2.48],[-.98,.82,-2.48]],shell);
+  panel([[-1.06,1.02,-1.12],[1.06,1.02,-1.12],[.78,1.86,-.32],[-.78,1.86,-.32]],glass);
+  panel([[-.78,1.86,-.32],[.78,1.86,-.32],[.78,1.86,.52],[-.78,1.86,.52]],shell);
+  panel([[-.78,1.86,.52],[.78,1.86,.52],[1.06,1.04,1.22],[-1.06,1.04,1.22]],glass);
   for(const side of [-1,1]){
-    const lamp=box([.3,.18,.12],[side*.68,1,-1.84],light);lamp.rotation.y=side*.08;
-    for(const z of [-1.15,1.15]){
-      const wheel=new T.Mesh(new T.CylinderGeometry(.48,.48,.34,8),trim);wheel.rotation.z=Math.PI/2;wheel.position.set(side*1.02,.48,z);vehicle.add(wheel);
-      const hub=new T.Mesh(new T.CylinderGeometry(.18,.18,.36,8),shell);hub.rotation.z=Math.PI/2;hub.position.set(side*1.02,.48,z);vehicle.add(hub);
+    panel([[side*1.12,.62,-1.42],[side*1.12,.62,1.58],[side*1.06,1.04,1.22],[side*1.06,1.04,-1.12]],shell);
+    panel([[side*1.06,1.04,-1.12],[side*1.06,1.04,1.22],[side*.78,1.84,.52],[side*.78,1.84,-.32]],glass);
+    panel([[side*1.12,.62,1.55],[side*1.12,.62,2.28],[side*1.02,1.02,2.28],[side*1.06,1.04,1.22]],shell);
+    box([.16,.12,1.45],[side*1.08,1.13,1.86],shell);
+    const arch=new T.Mesh(new T.TorusGeometry(.62,.13,4,9,Math.PI),trim);arch.rotation.set(Math.PI/2,Math.PI/2,0);arch.position.set(side*1.05,.55,-1.42);vehicle.add(arch);
+    const rearArch=arch.clone();rearArch.position.z=1.42;vehicle.add(rearArch);
+  }
+  // Open cargo bed with low angular rails and a faceted tailgate.
+  box([1.7,.08,1.18],[0,.84,1.72],trim);
+  panel([[-1.1,.62,2.28],[1.1,.62,2.28],[1.1,1.02,2.28],[-1.1,1.02,2.28]],shell);
+  box([.08,.12,1.36],[-1.08,1.08,1.78],shell);box([.08,.12,1.36],[1.08,1.08,1.78],shell);
+  box([1.5,.075,.06],[0,1.87,.1],shell);
+  box([1.42,.075,.055],[0,.91,-2.5],light);
+  box([1.72,.14,.12],[0,.72,2.38],trim);
+  for(const side of [-1,1]){
+    box([.32,.16,.08],[side*.68,.78,-2.49],light);
+    for(const z of [-1.42,1.42]){
+      const wheel=new T.Mesh(new T.CylinderGeometry(.55,.55,.38,8),trim);wheel.rotation.z=Math.PI/2;wheel.position.set(side*1.12,.52,z);vehicle.add(wheel);
+      const hub=new T.Mesh(new T.CylinderGeometry(.2,.2,.4,8),shell);hub.rotation.z=Math.PI/2;hub.position.set(side*1.12,.52,z);vehicle.add(hub);
     }
   }
-  const roof=box([1.55,.12,1.45],[0,1.89,-.32],shell);roof.rotation.x=-.04;
   vehicle.scale.setScalar(1.35);
   return vehicle;
 }
