@@ -57,6 +57,39 @@ button {
 .menu-option:hover {
   background: #a5c6b212;
 }
+.settings-list {
+  display: grid;
+  gap: 20px;
+  margin: 28px 0 18px;
+}
+.setting-row {
+  display: grid;
+  gap: 12px;
+}
+.setting-row > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  color: #bdd7c9;
+  font-size: 12px;
+}
+.setting-row output {
+  color: var(--mint);
+  font-variant-numeric: tabular-nums;
+}
+.setting-row input {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--mint);
+  touch-action: pan-x;
+}
+.settings-note {
+  margin-top: 22px;
+  color: #8da69b;
+  font-size: 10px;
+  line-height: 1.8;
+}
 .back-button {
   background: none;
   color: #a6c5b7;

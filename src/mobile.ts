@@ -11,6 +11,8 @@ export interface MobileActions {
 export class MobileControls {
   private sources = new Map<number, Set<string>>();
   private joystickPointer: number | null = null;
+  private steeringX = 0;
+  private steeringY = 0;
   private lookPointers = new Map<number, { x: number; y: number }>();
   private cleanup = new Set<() => void>();
   private stick = document.getElementById("joystick")!;
@@ -32,6 +34,8 @@ export class MobileControls {
       if (e.pointerId === this.joystickPointer) {
         this.sources.delete(e.pointerId);
         this.joystickPointer = null;
+        this.steeringX = 0;
+        this.steeringY = 0;
         this.thumb.style.transform = "translate(0px,0px)";
       }
     };
@@ -77,6 +81,9 @@ export class MobileControls {
   get keys() {
     return new Set([...this.sources.values()].flatMap((keys) => [...keys]));
   }
+  get steering() {
+    return { x: this.steeringX, y: this.steeringY };
+  }
   private moveStick(e: PointerEvent) {
     const rect = this.stick.getBoundingClientRect(),
       radius = rect.width * 0.34;
@@ -90,15 +97,15 @@ export class MobileControls {
     this.thumb.style.transform = `translate(${x * radius}px,${y * radius}px)`;
     const keys = new Set<string>();
     if (this.actions.onFoot()) {
+      this.steeringX = 0;
+      this.steeringY = 0;
       if (x > 0.25) keys.add("KeyD");
       if (x < -0.25) keys.add("KeyA");
       if (y < -0.25) keys.add("KeyW");
       if (y > 0.25) keys.add("KeyS");
     } else {
-      if (x < -0.25) keys.add("ArrowLeft");
-      if (x > 0.25) keys.add("ArrowRight");
-      if (y < -0.25) keys.add("ArrowUp");
-      if (y > 0.25) keys.add("ArrowDown");
+      this.steeringX = x;
+      this.steeringY = y;
     }
     this.sources.set(e.pointerId, keys);
   }
@@ -125,6 +132,8 @@ export class MobileControls {
   reset() {
     this.sources.clear();
     this.joystickPointer = null;
+    this.steeringX = 0;
+    this.steeringY = 0;
     this.lookPointers.clear();
     this.thumb.style.transform = "translate(0px,0px)";
     for (const clear of this.cleanup) clear();

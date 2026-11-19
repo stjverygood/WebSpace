@@ -10,6 +10,15 @@ import './landscape.css';
 
 const $=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
 const canvas=$<HTMLCanvasElement>('universe');
+type GameSettings={joystickSensitivity:number;cameraDistance:number;viewSensitivity:number};
+const DEFAULT_SETTINGS:GameSettings={joystickSensitivity:1,cameraDistance:10.5,viewSensitivity:1};
+function storedValue(value:unknown,min:number,max:number,fallback:number){const n=Number(value);return Number.isFinite(n)?T.MathUtils.clamp(n,min,max):fallback;}
+function loadSettings():GameSettings{
+  try{const saved=JSON.parse(localStorage.getItem('astral-settings')||'{}') as Partial<GameSettings>;return{joystickSensitivity:storedValue(saved.joystickSensitivity,.25,2.5,DEFAULT_SETTINGS.joystickSensitivity),cameraDistance:storedValue(saved.cameraDistance,6,18,DEFAULT_SETTINGS.cameraDistance),viewSensitivity:storedValue(saved.viewSensitivity,.25,2.5,DEFAULT_SETTINGS.viewSensitivity)};}
+  catch{return{...DEFAULT_SETTINGS};}
+}
+const settings=loadSettings();
+let cameraOrbitYaw=0,cameraOrbitPitch=0;
 const touchLayout=()=>matchMedia('(any-pointer: coarse), (max-width: 700px), (max-width: 1024px) and (max-height: 600px)').matches;
 document.body.classList.toggle('touch-layout',touchLayout());
 const keyboardKeys=new Set<string>();
@@ -116,8 +125,8 @@ function initAudio(){
 }
 $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.resume();$('sound-state').textContent=soundEnabled?'开':'关';$('sound').setAttribute('aria-pressed',String(soundEnabled));}catch{notify('此浏览器暂不支持音频');}};
 
-const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,look:(x,y)=>{flight.mouseX+=x;flight.mouseY+=y;},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
-function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;if(document.pointerLockElement)document.exitPointerLock();}
+const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else{cameraOrbitYaw+=x*.0018*settings.viewSensitivity;cameraOrbitPitch=T.MathUtils.clamp(cameraOrbitPitch+y*.0018*settings.viewSensitivity,-.65,.65);}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
+function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
   const blocked=needsLandscape(innerWidth,innerHeight,touchLayout());
   if(blocked&&!orientationBlocked)release();
@@ -169,7 +178,7 @@ function fullscreenChanged(){
 document.addEventListener('fullscreenchange',fullscreenChanged);
 document.addEventListener('webkitfullscreenchange',fullscreenChanged);
 function menuView(){
-  $('pause-menu').classList.remove('hidden');$('instructions-view').classList.add('hidden');
+  $('pause-menu').classList.remove('hidden');$('instructions-view').classList.add('hidden');$('settings-view').classList.add('hidden');
   document.querySelector('.modal')?.setAttribute('aria-labelledby','modal-title');
 }
 function pause(){paused=true;release();menuView();document.body.classList.add('is-paused');$('pause-overlay').classList.remove('hidden');updateOrientation();$('resume').focus();}
@@ -180,6 +189,24 @@ function showManual(platform:'desktop'|'mobile'){
   $('manual-desktop').classList.toggle('hidden',isMobile);$('manual-mobile').classList.toggle('hidden',!isMobile);
   $('manual-desktop-tab').setAttribute('aria-selected',String(!isMobile));$('manual-mobile-tab').setAttribute('aria-selected',String(isMobile));
 }
+function setupSettings(){
+  const controls:[string,string,keyof GameSettings,string][]=[
+    ['setting-joystick','setting-joystick-value','joystickSensitivity','×'],
+    ['setting-distance','setting-distance-value','cameraDistance','m'],
+    ['setting-view','setting-view-value','viewSensitivity','×'],
+  ];
+  for(const [id,outputId,key,unit] of controls){
+    const input=$<HTMLInputElement>(id),output=$<HTMLOutputElement>(outputId);
+    input.value=String(settings[key]);
+    const refresh=()=>{const value=settings[key];output.value=unit==='m'?`${value.toFixed(1)} m`:`${value.toFixed(2)}×`;};
+    refresh();
+    input.addEventListener('input',()=>{
+      settings[key]=Number(input.value);refresh();
+      try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Settings still apply until this page closes. */}
+    });
+  }
+}
+setupSettings();
 function start(){active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('intro').classList.add('departed');$('intro').inert=true;$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();if(touchLayout())void fullscreen(false);lock();notify(touchLayout()?'左手摇杆移动 · 右侧按钮推进 · 右上角暂停':'W 前进 · S 后退 · 鼠标转向 · 自由探索');}
 $('start').onclick=start;
 $('resume').onclick=resume;
@@ -190,9 +217,14 @@ $('show-instructions').onclick=()=>{
   showManual(touchLayout()?'mobile':'desktop');$('instructions-back').focus();
 };
 $('instructions-back').onclick=()=>{menuView();$('show-instructions').focus();};
+$('show-settings').onclick=()=>{
+  $('pause-menu').classList.add('hidden');$('settings-view').classList.remove('hidden');
+  document.querySelector('.modal')?.setAttribute('aria-labelledby','settings-title');$('setting-joystick').focus();
+};
+$('settings-back').onclick=()=>{menuView();$('show-settings').focus();};
 $('manual-desktop-tab').onclick=()=>showManual('desktop');$('manual-mobile-tab').onclick=()=>showManual('mobile');
 $('home').onclick=e=>{e.preventDefault();pause();};
-$('reset').onclick=()=>{release();expedition.reset();camera.position.copy(flight.position).add(new T.Vector3(0,7,24));paused=false;active=false;document.body.classList.remove('active-flight','on-foot','is-paused');$('intro').classList.remove('departed');$('intro').inert=false;$('pause-overlay').classList.add('hidden');$('reticle').classList.add('hidden');updateOrientation();$('start').focus();notify('已返回出发点');};
+$('reset').onclick=()=>{release();expedition.reset();cameraOrbitYaw=0;cameraOrbitPitch=0;camera.position.copy(flight.position).add(new T.Vector3(0,7,24));paused=false;active=false;document.body.classList.remove('active-flight','on-foot','is-paused');$('intro').classList.remove('departed');$('intro').inert=false;$('pause-overlay').classList.add('hidden');$('reticle').classList.add('hidden');updateOrientation();$('start').focus();notify('已返回出发点');};
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
 addEventListener('mouseup',()=>drag=false);
 addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){flight.mouseX+=T.MathUtils.clamp(e.movementX,-80,80);flight.mouseY+=T.MathUtils.clamp(e.movementY,-80,80);}});
@@ -204,9 +236,9 @@ addEventListener('keydown',e=>{
     return;
   }
   if(paused){
-    if(e.code==='Escape'&&!e.repeat){e.preventDefault();if(!$('instructions-view').classList.contains('hidden')){menuView();$('show-instructions').focus();}else resume();}
+    if(e.code==='Escape'&&!e.repeat){e.preventDefault();if(!$('instructions-view').classList.contains('hidden')){menuView();$('show-instructions').focus();}else if(!$('settings-view').classList.contains('hidden')){menuView();$('show-settings').focus();}else resume();}
     if(e.code==='Tab'){
-      const visible=Array.from(document.querySelectorAll<HTMLElement>('.modal button')).filter(el=>el.getClientRects().length>0);
+      const visible=Array.from(document.querySelectorAll<HTMLElement>('.modal button, .modal input')).filter(el=>el.getClientRects().length>0);
       const first=visible[0],last=visible[visible.length-1];
       if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
     }return;
@@ -234,6 +266,7 @@ function frame(now:number){
   const dt=Math.min((now-last)/1000,.04);last=now;
   if(!paused&&!orientationBlocked){clockTime+=dt;if(active){
     flight.keys.clear();for(const code of keyboardKeys)flight.keys.add(code);for(const code of mobile.keys)flight.keys.add(code);
+    const steering=mobile.steering;flight.joystickX=steering.x*settings.joystickSensitivity;flight.joystickY=steering.y*settings.joystickSensitivity;
     expedition.update(dt);
   }}
   if(lastOnFoot!==expedition.onFoot){keyboardKeys.clear();mobile.reset();flight.keys.clear();lastOnFoot=expedition.onFoot;}
@@ -256,14 +289,20 @@ function frame(now:number){
   if(!active){ship.position.y+=Math.sin(clockTime*.65)*.45;ship.rotateZ(Math.sin(clockTime*.3)*.025);}
   const boosting=flight.keys.has('KeyW');
   for(let i=0;i<engines.length;i++){const engine=engines[i];engine.scale.y=(flight.mode==='landed'?.05:boosting?2.4:.45+flight.speed/130)*(1+Math.sin(clockTime*35+i)*.07);engine.visible=flight.mode!=='landed';}
-  const desiredCamera=new T.Vector3(0,active?4.3:6.5,active?10.5+Math.min(flight.speed/170,1.5):23).applyQuaternion(flight.rotation).add(ship.position);
+  const cameraDistance=active?settings.cameraDistance:23;
+  const cameraHeight=active?cameraDistance*.38:6.5;
+  const cameraRear=active?Math.sqrt(Math.max(0,cameraDistance*cameraDistance-cameraHeight*cameraHeight)):23;
+  const cameraOffset=new T.Vector3(0,cameraHeight,cameraRear);
+  if(active&&!onFoot)cameraOffset.applyEuler(new T.Euler(cameraOrbitPitch,cameraOrbitYaw,0,'YXZ'));
+  const desiredCamera=cameraOffset.applyQuaternion(flight.rotation).add(ship.position);
   shipCameraTarget.position.set(active?0:3.5,active?1:2.3,active?(local.altitude<25?-6:-9):-28);
   ship.updateMatrixWorld(true);
   const desiredLook=shipCameraTarget.getWorldPosition(new T.Vector3());
   const cameraUp=onFoot?walker.normal:new T.Vector3(0,1,0).applyQuaternion(flight.rotation);
   if(onFoot){
     desiredLook.copy(walker.position).addScaledVector(cameraUp,1.25);
-    desiredCamera.copy(desiredLook).addScaledVector(walker.forward,-7.8*Math.cos(walker.pitch)).addScaledVector(cameraUp,7.8*Math.sin(walker.pitch)+1);
+    const footCameraDistance=settings.cameraDistance;
+    desiredCamera.copy(desiredLook).addScaledVector(walker.forward,-footCameraDistance*Math.cos(walker.pitch)).addScaledVector(cameraUp,footCameraDistance*Math.sin(walker.pitch));
   }
   cameraPosition.copy(desiredCamera);
   // A chase camera must remain above terrain even when the player flies towards it.

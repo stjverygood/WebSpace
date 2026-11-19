@@ -14,10 +14,11 @@ export class Flight {
   elapsed=0;
   keys=new Set<string>();
   mouseX=0;mouseY=0;
+  joystickX=0;joystickY=0;
   onNotice=(message:string)=>{void message;};
   get speed(){return this.velocity.length();}
   get local(){return nearest(this.position);}
-  reset(){this.position.set(0,30,50);this.rotation.identity();this.velocity.set(0,0,0);this.mode='manual';this.keys.clear();this.mouseX=0;this.mouseY=0;}
+  reset(){this.position.set(0,30,50);this.rotation.identity();this.velocity.set(0,0,0);this.mode='manual';this.keys.clear();this.mouseX=0;this.mouseY=0;this.joystickX=0;this.joystickY=0;}
   interact(){
     if(this.mode==='landed'){
       this.mode='takeoff';this.elapsed=0;this.onNotice('起飞程序启动');return;
@@ -56,8 +57,8 @@ export class Flight {
       this.position.addScaledVector(this.velocity,dt);
       if(this.elapsed>3.3){this.mode='manual';this.onNotice('起飞完成 · 已恢复手动驾驶');}return;
     }
-    const yaw=(key('ArrowLeft')-key('ArrowRight'))*dt*1.05-this.mouseX*.0018;
-    const pitch=(key('ArrowUp')-key('ArrowDown'))*dt*.85-this.mouseY*.0018;
+    const yaw=(key('ArrowLeft')-key('ArrowRight')-this.joystickX)*dt*1.05-this.mouseX*.0018;
+    const pitch=(key('ArrowUp')-key('ArrowDown')-this.joystickY)*dt*.85-this.mouseY*.0018;
     this.rotation.multiply(new T.Quaternion().setFromAxisAngle(Y,yaw));
     this.rotation.multiply(new T.Quaternion().setFromAxisAngle(X,pitch));
     this.rotation.normalize();
