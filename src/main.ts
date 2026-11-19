@@ -1,5 +1,5 @@
 import * as T from 'three';
-import { createPlanet, nearest, planets, groundRadius, surfaceRadius } from './world';
+import { createPlanet, nearest, planets, groundRadius, surfaceRadius, tickPlanetClock, carryPointWithPlanet, carryDirectionWithPlanet, planetRotationDelta, planetVelocity } from './world';
 import { Expedition, createAstronaut } from './exploration';
 import { MobileControls } from './mobile';
 import { enterPortrait, needsPortrait } from './display';
@@ -308,6 +308,17 @@ camera.position.copy(flight.position).add(new T.Vector3(0,7,24));
 function frame(now:number){
   const dt=Math.min((now-last)/1000,.04);last=now;
   if(!paused&&!orientationBlocked){clockTime+=dt;if(active){
+    tickPlanetClock(dt);
+    for(const body of planets){
+      const delta=planetRotationDelta(body),centerVelocity=planetVelocity(body,dt);
+      if(expedition.walker.body===body&&(expedition.onFoot||expedition.inVehicle)){
+        const walker=expedition.walker;carryPointWithPlanet(body,walker.position);carryDirectionWithPlanet(body,walker.forward);carryDirectionWithPlanet(body,walker.facing);carryDirectionWithPlanet(body,walker.velocity);
+      }
+      for(const vehicle of expedition.vehicles)if(vehicle.body===body){carryPointWithPlanet(body,vehicle.position);carryDirectionWithPlanet(body,vehicle.forward);vehicle.rotation.premultiply(delta);}
+      if(expedition.flight.landBody===body&&(expedition.flight.mode==='landed'||expedition.flight.mode==='landing'||expedition.flight.mode==='takeoff')){
+        carryPointWithPlanet(body,expedition.flight.position);carryPointWithPlanet(body,expedition.flight.destination);carryDirectionWithPlanet(body,expedition.flight.landNormal);carryDirectionWithPlanet(body,expedition.flight.velocity);expedition.flight.velocity.add(centerVelocity);expedition.flight.rotation.premultiply(delta);
+      }
+    }
     flight.keys.clear();for(const code of keyboardKeys)flight.keys.add(code);for(const code of mobile.keys)flight.keys.add(code);
     const steering=mobile.steering;flight.joystickX=steering.x*settings.joystickSensitivity;flight.joystickY=steering.y*settings.joystickSensitivity;
     expedition.update(dt);

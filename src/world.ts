@@ -21,7 +21,8 @@ export function terrain(p: Planet, n: T.Vector3): number {
   return (broad+detail+ridges-.12)*p.radius*.045;
 }
 export function surfaceRadius(p: Planet,n: T.Vector3): number {
-  return p.radius+Math.max(p.seed===1.7?0:-p.radius*.02, terrain(p,n));
+  const motion=motions.get(p);const localNormal=motion?n.clone().applyQuaternion(motion.spin.clone().invert()):n;
+  return p.radius+Math.max(p.seed===1.7?0:-p.radius*.02, terrain(p,localNormal));
 }
 export function nearest(position: T.Vector3) {
   let body=planets[0],distance=Infinity;
@@ -31,6 +32,8 @@ export function nearest(position: T.Vector3) {
 }
 
 const groundMeshes=new Map<Planet,T.Mesh>();
+interface PlanetMotion { group:T.Group; baseCenter:T.Vector3; initialPhase:number; orbitRadius:number; orbitPeriod:number; spinPeriod:number; spin:T.Quaternion; previousCenter:T.Vector3; previousSpin:T.Quaternion; obstacleLocal:T.Vector3[] }
+const motions=new Map<Planet,PlanetMotion>();
 export interface SurfaceObstacle { position:T.Vector3; radius:number; height:number; vehicleBlocking?:boolean }
 const obstacles=new Map<Planet,SurfaceObstacle[]>();
 const groundRay=new T.Raycaster();
@@ -39,11 +42,41 @@ const groundRay=new T.Raycaster();
 export function groundRadius(p:Planet,normal:T.Vector3):number {
   const mesh=groundMeshes.get(p);
   if(!mesh)return surfaceRadius(p,normal);
-  groundRay.set(normal.clone().multiplyScalar(p.radius+100),normal.clone().negate());
+  mesh.updateMatrixWorld(true);
+  const origin=p.center.clone().addScaledVector(normal,p.radius+100);
+  groundRay.set(origin,normal.clone().negate());
   const hit=groundRay.intersectObject(mesh,false)[0];
-  return hit?hit.point.length():surfaceRadius(p,normal);
+  return hit?hit.point.distanceTo(p.center):surfaceRadius(p,normal);
 }
 export function surfaceObstacles(p:Planet):readonly SurfaceObstacle[]{return obstacles.get(p)??[];}
+
+export function advancePlanetMotion(dt:number){
+  for(const [planet,motion] of motions){
+    motion.previousCenter.copy(planet.center);motion.previousSpin.copy(motion.spin);
+    const phase=motion.initialPhase+clockTimeForPlanets/motion.orbitPeriod*Math.PI*2;
+    planet.center.set(Math.cos(phase)*motion.orbitRadius,motion.baseCenter.y,Math.sin(phase)*motion.orbitRadius);
+    motion.spin.setFromAxisAngle(UP,clockTimeForPlanets/motion.spinPeriod*Math.PI*2);
+    motion.group.position.copy(planet.center);motion.group.quaternion.copy(motion.spin);motion.group.updateMatrixWorld(true);
+    const list=obstacles.get(planet)??[];
+    for(let i=0;i<list.length;i++)list[i].position.copy(motion.obstacleLocal[i]).applyQuaternion(motion.spin).add(planet.center);
+  }
+}
+let clockTimeForPlanets=0;
+export function tickPlanetClock(dt:number){clockTimeForPlanets+=Math.min(dt,.04);advancePlanetMotion(0);}
+export function carryPointWithPlanet(p:Planet,point:T.Vector3){
+  const motion=motions.get(p);if(!motion)return point;
+  return point.sub(motion.previousCenter).applyQuaternion(motion.previousSpin.clone().invert()).applyQuaternion(motion.spin).add(p.center);
+}
+export function carryDirectionWithPlanet(p:Planet,direction:T.Vector3){
+  const motion=motions.get(p);if(!motion)return direction;
+  return direction.applyQuaternion(motion.previousSpin.clone().invert()).applyQuaternion(motion.spin);
+}
+export function planetRotationDelta(p:Planet){
+  const motion=motions.get(p);return motion?motion.spin.clone().multiply(motion.previousSpin.clone().invert()):new T.Quaternion();
+}
+export function planetVelocity(p:Planet,dt:number){
+  const motion=motions.get(p);return motion?p.center.clone().sub(motion.previousCenter).multiplyScalar(1/Math.max(dt,.001)):new T.Vector3();
+}
 
 function addSettlement(p:Planet,group:T.Group,colliders:SurfaceObstacle[]){
   const scale=T.MathUtils.clamp(p.radius/300,.72,1.25);
@@ -170,7 +203,7 @@ export function createPlanet(p:Planet):T.Group {
   geo.setAttribute('color',new T.Float32BufferAttribute(colors,3));geo.computeVertexNormals();
   const ground=new T.Mesh(geo,new T.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:.92,metalness:.04}));
   group.add(ground);
-  groundMeshes.set(p,new T.Mesh(geo,new T.MeshBasicMaterial()));
+  const collisionGround=new T.Mesh(geo,new T.MeshBasicMaterial({colorWrite:false,depthWrite:false}));group.add(collisionGround);groundMeshes.set(p,collisionGround);
   const colliders:SurfaceObstacle[]=[];obstacles.set(p,colliders);
   // Surface outcrops provide a human-scale reference during low flight.
   const outcrops=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),new T.MeshStandardMaterial({color:p.colors[3],roughness:.95,flatShading:true}),420);
@@ -202,6 +235,11 @@ export function createPlanet(p:Planet):T.Group {
       mesh.rotation.x=Math.PI/2;rings.add(mesh);
     }group.add(rings);
   }
+  const orbitRadius=Math.hypot(p.center.x,p.center.z);
+  const initialPhase=Math.atan2(p.center.z,p.center.x);
+  const index=planets.indexOf(p);
+  const collidersLocal=colliders.map(item=>item.position.clone().sub(p.center));
+  motions.set(p,{group,baseCenter:p.center.clone(),initialPhase,orbitRadius,orbitPeriod:[3600,5400,7200][Math.max(0,index)]??5400,spinPeriod:[900,1400,2100][Math.max(0,index)]??1400,spin:new T.Quaternion(),previousCenter:p.center.clone(),previousSpin:new T.Quaternion(),obstacleLocal:collidersLocal});
   return group;
 }
 
