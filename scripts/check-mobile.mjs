@@ -10,7 +10,7 @@ globalThis.document={getElementById(id){if(!elements.has(id))elements.set(id,new
 const windowEvents=new EventTarget();globalThis.addEventListener=windowEvents.addEventListener.bind(windowEvents);
 const {MobileControls}=await import('../src/mobile.ts');
 let enabled=true,onFoot=false,jumps=0,interactions=0,launches=0,look=[];
-const controls=new MobileControls({enabled:()=>enabled,onFoot:()=>onFoot,look:(x,y)=>look.push([x,y]),interact:()=>interactions++,takeoff:()=>launches++,jump:()=>jumps++});
+const controls=new MobileControls({enabled:()=>enabled,onFoot:()=>onFoot,inVehicle:()=>false,look:(x,y)=>look.push([x,y]),interact:()=>interactions++,takeoff:()=>launches++,jump:()=>jumps++});
 const send=(id,type,pointerId,x=59,y=59)=>{const e=new Event(type,{cancelable:true});Object.assign(e,{pointerId,clientX:x,clientY:y,pointerType:'touch'});document.getElementById(id).dispatchEvent(e);};
 send('joystick','pointerdown',1,59,19);assert.ok(controls.steering.y<-.99);assert.equal(controls.keys.size,0,'ship joystick returns analog steering without key presses');
 send('touch-forward','pointerdown',2);assert.ok(controls.keys.has('KeyW'));

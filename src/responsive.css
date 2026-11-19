@@ -470,6 +470,18 @@ button {
   border-color: #b8e6ceaa;
   background: #b8e6ce33;
 }
+.touch-left-panel .vehicle-only {
+  display: none;
+}
+.in-vehicle .touch-left-panel .ship-only {
+  display: none;
+}
+.in-vehicle .touch-left-panel .vehicle-only {
+  display: block;
+}
+.in-vehicle .joystick-area {
+  pointer-events: none;
+}
 .touch-throttle {
   display: grid;
   width: 113px;
@@ -492,19 +504,28 @@ button {
   border-color: #b8e6ceaa;
   background: #b8e6ce33;
 }
+.touch-throttle button span {
+  display: inline-block;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 400;
+}
 .on-foot .touch-right-panel .touch-throttle {
   display: none;
 }
 .on-foot .touch-left-panel {
   display: none;
 }
-.is-landed .touch-left-panel {
-  display: grid !important;
+.in-vehicle .touch-left-panel {
+  display: grid;
 }
-.is-landed .touch-right-panel .touch-throttle {
-  display: grid !important;
+.ship-grounded .touch-left-panel {
+  display: none !important;
 }
-.is-landed .touch-actions .touch-jump {
+.ship-grounded .touch-right-panel .touch-throttle {
+  display: none !important;
+}
+.ship-grounded .touch-actions .touch-jump {
   display: none !important;
 }
 .joystick {
@@ -597,6 +618,9 @@ button {
 }
 .on-foot .touch-actions .touch-jump {
   display: block;
+}
+.in-vehicle .touch-actions .touch-jump {
+  display: none;
 }
 .touch-layout .touch-control-button {
   border: 1px solid #b8e6ce30;

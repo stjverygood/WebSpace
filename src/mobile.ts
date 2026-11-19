@@ -1,6 +1,7 @@
 export interface MobileActions {
   enabled: () => boolean;
   onFoot: () => boolean;
+  inVehicle: () => boolean;
   look: (x: number, y: number) => void;
   zoom: (distanceDelta: number) => void;
   interact: () => void;
@@ -99,8 +100,10 @@ export class MobileControls {
       });
     this.hold("touch-reverse", () => actions.onFoot() ? [] : ["KeyS"]);
     this.hold("touch-forward", () => actions.onFoot() ? [] : ["KeyW"]);
-    this.hold("touch-roll-left", () => actions.onFoot() ? [] : ["RollLeft"]);
-    this.hold("touch-roll-right", () => actions.onFoot() ? [] : ["RollRight"]);
+    this.hold("touch-roll-left", () => actions.onFoot()||actions.inVehicle() ? [] : ["RollLeft"]);
+    this.hold("touch-roll-right", () => actions.onFoot()||actions.inVehicle() ? [] : ["RollRight"]);
+    this.hold("touch-steer-left", () => actions.inVehicle() ? ["CarLeft"] : []);
+    this.hold("touch-steer-right", () => actions.inVehicle() ? ["CarRight"] : []);
     document.getElementById("touch-action")!.onclick = () => {
       if (actions.enabled()) actions.interact();
     };
@@ -151,6 +154,9 @@ export class MobileControls {
       if (y < -0.25) keys.add("KeyW");
       if (y > 0.25) keys.add("KeyS");
       if (magnitude > 0.68) keys.add("ShiftLeft");
+    } else if (this.actions.inVehicle()) {
+      this.steeringX = 0;
+      this.steeringY = 0;
     } else {
       this.steeringX = x;
       this.steeringY = y;
