@@ -1,4 +1,5 @@
 import * as T from 'three';
+const UP=new T.Vector3(0,1,0);
 
 export interface Planet {
   name: string; code: string; description: string; type: string;
@@ -44,6 +45,109 @@ export function groundRadius(p:Planet,normal:T.Vector3):number {
 }
 export function surfaceObstacles(p:Planet):readonly SurfaceObstacle[]{return obstacles.get(p)??[];}
 
+function addSettlement(p:Planet,group:T.Group,colliders:SurfaceObstacle[]){
+  const scale=T.MathUtils.clamp(p.radius/300,.72,1.25);
+  const anchor=p.center.clone().negate().normalize();
+  const east=new T.Vector3().crossVectors(anchor,UP).normalize();
+  const north=new T.Vector3().crossVectors(anchor,east).normalize();
+  const pointAt=(x:number,z:number,lift=0)=>{
+    const normal=anchor.clone().addScaledVector(east,x/p.radius).addScaledVector(north,z/p.radius).normalize();
+    return normal.multiplyScalar(groundRadius(p,normal)+lift);
+  };
+  const road=new T.MeshStandardMaterial({color:0x353c40,roughness:.96,flatShading:true});
+  const shoulder=new T.MeshStandardMaterial({color:0x747970,roughness:.98,flatShading:true});
+  const marking=new T.MeshStandardMaterial({color:0xd7c99e,roughness:.88,flatShading:true});
+  const makeRibbon=(path:number[][],width:number,material:T.Material,lift=.2)=>{
+    const samples:T.Vector3[]=[];
+    for(let s=0;s<path.length-1;s++){
+      const a=path[s],b=path[s+1],dx=b[0]-a[0],dz=b[1]-a[1],steps=Math.max(2,Math.ceil(Math.hypot(dx,dz)/7));
+      for(let i=0;i<steps;i++){const t=i/steps;samples.push(new T.Vector3(a[0]+dx*t,a[1]+dz*t,0));}
+    }
+    const last=path[path.length-1];samples.push(new T.Vector3(last[0],last[1],0));
+    const vertices:number[]=[],indices:number[]=[];
+    for(let i=0;i<samples.length;i++){
+      const before=samples[Math.max(0,i-1)],after=samples[Math.min(samples.length-1,i+1)];
+      const dx=after.x-before.x,dz=after.y-before.y,length=Math.hypot(dx,dz)||1;
+      const px=-dz/length*width/2,pz=dx/length*width/2;
+      const left=pointAt(samples[i].x+px,samples[i].y+pz,lift),right=pointAt(samples[i].x-px,samples[i].y-pz,lift);
+      vertices.push(left.x,left.y,left.z,right.x,right.y,right.z);
+      if(i<samples.length-1){const a=i*2;indices.push(a,a+1,a+2,a+1,a+3,a+2);}
+    }
+    const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.setIndex(indices);geometry.computeVertexNormals();
+    const surfaceMaterial=material.clone();surfaceMaterial.side=T.DoubleSide;group.add(new T.Mesh(geometry,surfaceMaterial));
+  };
+  const mainPath=[[-180,44],[0,44],[190,44]],crossPath=[[65,-165],[65,0],[65,175]];
+  makeRibbon(mainPath,11*scale,shoulder,.28);makeRibbon(mainPath,8.2*scale,road,.38);
+  makeRibbon(crossPath,10*scale,shoulder,.3);makeRibbon(crossPath,7.2*scale,road,.4);
+  for(let x=-150;x<180;x+=25)makeRibbon([[x,44],[x+3.2,44]],.22*scale,marking,.47);
+
+  const steel=new T.MeshStandardMaterial({color:0xa6b0aa,roughness:.72,metalness:.24,flatShading:true});
+  const pale=new T.MeshStandardMaterial({color:0xc7c6b6,roughness:.9,flatShading:true});
+  const dark=new T.MeshStandardMaterial({color:0x29383b,roughness:.56,metalness:.34,flatShading:true});
+  const glass=new T.MeshStandardMaterial({color:0x24444a,roughness:.28,metalness:.52,flatShading:true});
+  const accent=new T.MeshStandardMaterial({color:p.colors[1],roughness:.86,flatShading:true});
+  const box=(parent:T.Group,size:number[],position:number[],material:T.Material)=>{const m=new T.Mesh(new T.BoxGeometry(...size as [number,number,number]),material);m.position.fromArray(position);parent.add(m);return m;};
+  const cylinder=(parent:T.Group,radius:number,height:number,position:number[],material:T.Material,segments=8)=>{const m=new T.Mesh(new T.CylinderGeometry(radius,radius,height,segments),material);m.position.fromArray(position);parent.add(m);return m;};
+  const place=(x:number,z:number,heading:number)=>{
+    const normal=anchor.clone().addScaledVector(east,x/p.radius).addScaledVector(north,z/p.radius).normalize();
+    const object=new T.Group();object.position.copy(pointAt(x,z,.18));
+    const forward=north.clone().applyAxisAngle(normal,heading);
+    object.quaternion.setFromRotationMatrix(new T.Matrix4().lookAt(new T.Vector3(),forward,normal));group.add(object);return object;
+  };
+  const building=(kind:number,x:number,z:number,heading:number)=>{
+    const root=place(x,z,heading),model=new T.Group();model.scale.setScalar(scale);root.add(model);
+    box(model,[12,.55,11],[0,.28,0],dark);
+    if(kind===0){
+      cylinder(model,4.8,5.2,[0,3,0],pale,6);const dome=new T.Mesh(new T.ConeGeometry(5.2,3.3,6),steel);dome.position.y=7.1;model.add(dome);
+      for(const side of [-1,1])box(model,[.16,1.8,3.2],[side*4.65,3.2,0],glass);
+    }else if(kind===1){
+      box(model,[15,6,12],[0,3,0],steel);box(model,[13,4.8,.16],[0,2.9,-6.08],glass);
+      box(model,[16,.45,13],[0,6.2,0],dark);box(model,[9,.2,.2],[0,5.8,6.12],accent);
+    }else if(kind===2){
+      cylinder(model,1.25,15,[0,7.5,0],steel,6);cylinder(model,2.5,.5,[0,14,0],dark,6);cylinder(model,1.9,.5,[0,15,0],accent,6);
+      for(const y of [5,9,12]){const band=box(model,[4,.18,.18],[0,y,0],dark);band.rotation.z=.15;}
+      const antenna=new T.Mesh(new T.ConeGeometry(.25,4,5),steel);antenna.position.y=17.2;model.add(antenna);
+    }else if(kind===3){
+      box(model,[10,5.5,9],[0,2.75,0],pale);box(model,[7,.22,7],[0,5.65,0],dark);
+      for(const side of [-1,1]){const panel=new T.Mesh(new T.BoxGeometry(4,.12,5),glass);panel.position.set(side*6,4.1,0);panel.rotation.z=side*-.12;model.add(panel);}
+      box(model,[2,2.7,.18],[0,2.4,-4.62],glass);
+    }else{
+      box(model,[9,4,8],[0,2,0],steel);const roof=new T.Mesh(new T.ConeGeometry(7,4,4),pale);roof.position.y=6;roof.rotation.y=Math.PI/4;model.add(roof);
+      cylinder(model,.18,8,[0,9,0],dark,6);
+    }
+    const radius=(kind===1?11:kind===2?5:8)*scale,height=(kind===2?17:kind===1?7:9)*scale;
+    colliders.push({position:p.center.clone().add(pointAt(x,z,height*.5)),radius,height});
+  };
+  const parkedVehicle=(kind:number,x:number,z:number,heading:number)=>{
+    const root=place(x,z,heading),model=new T.Group();model.scale.setScalar(scale);root.add(model);
+    const frame=kind===0?dark:kind===1?steel:accent;
+    box(model,[2.3,.48,4.6],[0,.88,0],dark);
+    if(kind===0){
+      box(model,[2.5,.65,2.6],[0,1.32,.45],accent);box(model,[1.85,1.1,1.65],[0,2,-.45],glass);
+      for(const side of [-1,1]){const rail=box(model,[.12,1.45,.12],[side*.94,1.9,-.43],steel);rail.rotation.x=.16;}
+      box(model,[2.5,.16,.2],[0,2.75,-.45],steel);
+    }else if(kind===1){
+      box(model,[2.6,1.65,2.5],[0,1.65,.52],frame);box(model,[2.4,1.12,1.55],[0,2.1,-1.35],glass);
+      box(model,[2.75,.12,2.7],[0,2.56,.52],steel);
+    }else{
+      box(model,[2.4,.8,2.15],[0,1.32,.7],steel);box(model,[2.05,1.25,1.5],[0,2.2,-.52],glass);
+      box(model,[2.6,.24,.18],[0,2.9,-.52],accent);box(model,[2.9,.12,2.2],[0,2.3,1.9],dark);
+    }
+    const axleZ=kind===2?[-1.6,0,1.6]:[-1.55,1.55];
+    for(const side of [-1,1])for(const z of axleZ){
+      const wheel=new T.Mesh(new T.CylinderGeometry(kind===2?.62:.57,kind===2?.62:.57,.42,8),dark);wheel.rotation.z=Math.PI/2;wheel.position.set(side*1.18,.58,z);model.add(wheel);
+      const hub=new T.Mesh(new T.CylinderGeometry(.2,.2,.44,6),steel);hub.rotation.z=Math.PI/2;hub.position.set(side*1.18,.58,z);model.add(hub);
+    }
+    colliders.push({position:p.center.clone().add(pointAt(x,z,1.1*scale)),radius:4.3*scale,height:2.5*scale});
+  };
+  [
+    [0,112,16,.25],[1,125,86,-.12],[2,8,106,.62],[3,168,-18,.36],[4,-48,82,-.3],
+  ].forEach(([kind,x,z,heading])=>building(kind,x*scale,z*scale,heading));
+  [
+    [0,18,69,.08],[1,113,32,.1],[2,91,124,-.5],[1,174,72,.4],
+  ].forEach(([kind,x,z,heading])=>parkedVehicle(kind,x*scale,z*scale,heading));
+}
+
 export function createPlanet(p:Planet):T.Group {
   const group=new T.Group();group.position.copy(p.center);
   const geo=new T.IcosahedronGeometry(p.radius,10);
@@ -83,6 +187,7 @@ export function createPlanet(p:Planet):T.Group {
     colliders.push({position:transform.position.clone().add(p.center),radius:size*.8,height:size*(.6+(i%4)*.4)});
   }
   outcrops.count=count;group.add(outcrops);
+  addSettlement(p,group,colliders);
   const atmosphere=new T.Mesh(new T.SphereGeometry(p.radius*1.075,64,48),new T.ShaderMaterial({
     uniforms:{tint:{value:new T.Color(p.atmosphere)}},transparent:true,depthWrite:false,side:T.BackSide,blending:T.AdditiveBlending,
     vertexShader:`varying vec3 vNormal; varying vec3 vView; void main(){ vec4 view=modelViewMatrix*vec4(position,1.);vNormal=normalize(normalMatrix*normal);vView=normalize(-view.xyz);gl_Position=projectionMatrix*view; }`,
