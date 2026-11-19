@@ -47,7 +47,8 @@ export class MobileControls {
       );
     const canvas = document.getElementById("universe")!;
     canvas.addEventListener("pointerdown", (e) => {
-      if (e.pointerType !== "touch" || !actions.enabled() || e.clientX < innerWidth / 2) return;
+      const bounds = canvas.getBoundingClientRect();
+      if (e.pointerType !== "touch" || !actions.enabled() || e.clientX < bounds.left + bounds.width / 2) return;
       e.preventDefault();
       canvas.setPointerCapture(e.pointerId);
       this.lookPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
