@@ -49,8 +49,9 @@ export class GroundVehicle {
     const nextNormal=candidate.clone().sub(this.body.center).normalize();
     candidate.copy(this.body.center).addScaledVector(nextNormal,groundRadius(this.body,nextNormal)+.04);
     const blocked=surfaceObstacles(this.body).some(o=>{
+      if(!o.vehicleBlocking)return false;
       const offset=candidate.clone().sub(o.position);offset.addScaledVector(nextNormal,-offset.dot(nextNormal));
-      return offset.length()<o.radius+1.3&&o.height>1.1;
+      return offset.length()<o.radius+1.05&&o.height>1.1;
     });
     if(blocked)this.speed=0;else this.position.copy(candidate);
     this.forward.addScaledVector(nextNormal,-this.forward.dot(nextNormal)).normalize();

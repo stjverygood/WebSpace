@@ -31,7 +31,7 @@ export function nearest(position: T.Vector3) {
 }
 
 const groundMeshes=new Map<Planet,T.Mesh>();
-export interface SurfaceObstacle { position:T.Vector3; radius:number; height:number }
+export interface SurfaceObstacle { position:T.Vector3; radius:number; height:number; vehicleBlocking?:boolean }
 const obstacles=new Map<Planet,SurfaceObstacle[]>();
 const groundRay=new T.Raycaster();
 // Match the actual flat triangles under the astronaut's feet, not the smooth
@@ -116,7 +116,7 @@ function addSettlement(p:Planet,group:T.Group,colliders:SurfaceObstacle[]){
       cylinder(model,.18,8,[0,9,0],dark,6);
     }
     const radius=(kind===1?11:kind===2?5:8)*scale,height=(kind===2?17:kind===1?7:9)*scale;
-    colliders.push({position:p.center.clone().add(pointAt(x,z,height*.5)),radius,height});
+    colliders.push({position:p.center.clone().add(pointAt(x,z,height*.5)),radius,height,vehicleBlocking:true});
   };
   const parkedVehicle=(kind:number,x:number,z:number,heading:number)=>{
     const root=place(x,z,heading),model=new T.Group();model.scale.setScalar(scale);root.add(model);
@@ -138,7 +138,7 @@ function addSettlement(p:Planet,group:T.Group,colliders:SurfaceObstacle[]){
       const wheel=new T.Mesh(new T.CylinderGeometry(kind===2?.62:.57,kind===2?.62:.57,.42,8),dark);wheel.rotation.z=Math.PI/2;wheel.position.set(side*1.18,.58,z);model.add(wheel);
       const hub=new T.Mesh(new T.CylinderGeometry(.2,.2,.44,6),steel);hub.rotation.z=Math.PI/2;hub.position.set(side*1.18,.58,z);model.add(hub);
     }
-    colliders.push({position:p.center.clone().add(pointAt(x,z,1.1*scale)),radius:4.3*scale,height:2.5*scale});
+    colliders.push({position:p.center.clone().add(pointAt(x,z,1.1*scale)),radius:4.3*scale,height:2.5*scale,vehicleBlocking:true});
   };
   [
     [0,112,16,.25],[1,125,86,-.12],[2,8,106,.62],[3,168,-18,.36],[4,-48,82,-.3],
@@ -184,7 +184,9 @@ export function createPlanet(p:Planet):T.Group {
     transform.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),direction);
     transform.rotateY(i*1.73);transform.scale.set(size*.8,size*(.6+(i%4)*.4),size);
     transform.updateMatrix();outcrops.setMatrixAt(count++,transform.matrix);
-    colliders.push({position:transform.position.clone().add(p.center),radius:size*.8,height:size*(.6+(i%4)*.4)});
+    const height=size*(.6+(i%4)*.4);
+    // Small, partly buried decorative outcrops should not abruptly stop a vehicle.
+    colliders.push({position:transform.position.clone().add(p.center),radius:size*.8,height,vehicleBlocking:size>3.8&&height>3.4});
   }
   outcrops.count=count;group.add(outcrops);
   addSettlement(p,group,colliders);
