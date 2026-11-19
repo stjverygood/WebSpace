@@ -14,11 +14,23 @@ button {
 .pause-control {
   min-height: 44px;
   min-width: 64px;
+  gap: 8px;
+  padding: 0 12px;
   justify-content: center;
+  border: 1px solid #b3d4c62b;
+  border-radius: 5px;
+  background: #0a171d66;
+  backdrop-filter: blur(8px);
+  font-size: 11px;
 }
 .pause-control span {
-  font-size: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: 13px;
   color: var(--mint);
+  line-height: 1;
 }
 .topbar {
   justify-content: flex-end;
