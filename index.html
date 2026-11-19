@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#070d12" />
     <title>星际公民</title>
+    <script>if(matchMedia('(any-pointer: coarse), (max-width: 700px), (max-width: 1024px) and (max-height: 600px)').matches&&innerHeight>innerWidth)document.documentElement.classList.add('portrait-entry')</script>
+    <style>html.portrait-entry #rotate-overlay{display:grid!important;position:fixed;inset:0;z-index:100;place-items:center;padding:24px;background:#071016;color:#e3ede5;font-family:Arial,'Microsoft YaHei',sans-serif}html.portrait-entry #launcher{visibility:hidden}html.portrait-entry #rotate-menu{display:none}.rotate-card{text-align:center;max-width:340px;padding:24px}.rotate-card h2{font-size:26px;font-weight:400}.rotate-card .primary{padding:15px;background:#b8e6ce;color:#132d26;border-radius:4px}.rotate-note{font-size:12px;color:#9bb0ac}</style>
   </head>
   <body>
     <div id="game-root" hidden>
@@ -63,10 +65,10 @@
       <div class="joystick-area"><div id="joystick" class="joystick" role="group" aria-label="虚拟方向摇杆"><span class="joystick-axis">＋</span><div id="joystick-thumb" class="joystick-thumb"></div></div></div>
       <div class="touch-right-panel"><div class="touch-throttle ship-only"><button id="touch-reverse" aria-label="后退推进">后退</button><button id="touch-forward" aria-label="前进加速">前进</button></div><div class="touch-actions"><button id="touch-boost" class="foot-only">奔跑</button><button id="touch-jump" class="foot-only">跳跃</button><button id="touch-action" class="touch-accent">下船</button><button id="touch-launch" class="hidden">起飞</button></div></div>
     </div>
+    <div id="error" class="error hidden"></div>
+    </div>
     <div id="rotate-overlay" class="rotate-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rotate-title">
       <div class="rotate-card"><div class="eyebrow">A WIDER HORIZON</div><div class="rotate-illustration" aria-hidden="true"><span class="rotate-phone"></span><span class="rotate-arrow">↻</span></div><h2 id="rotate-title">把手机横过来。</h2><p>更宽的星海，留给双手探索。</p><button id="rotate-fullscreen" class="primary">尝试全屏横屏 <span>⛶</span></button><p id="rotate-note" class="rotate-note" role="status">请开启手机自动旋转，横置后即可游玩。<br>浏览器不支持方向锁定时，可手动旋转手机。</p><button id="rotate-menu" class="reset-button">菜单与操作说明</button></div>
-    </div>
-    <div id="error" class="error hidden"></div>
     </div>
     <main id="launcher" class="launcher">
       <header class="launch-brand"><span aria-hidden="true">✳</span><strong>星际公民</strong></header>
