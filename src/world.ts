@@ -68,7 +68,8 @@ export function advancePlanetMotion(dt:number){
   }
 }
 let clockTimeForPlanets=0;
-export function tickPlanetClock(dt:number,speed=1){clockTimeForPlanets+=Math.min(dt,.04)*T.MathUtils.clamp(speed,0,1000);advancePlanetMotion(0);}
+const PLANET_TIME_SCALE=10;
+export function tickPlanetClock(dt:number){clockTimeForPlanets+=Math.min(dt,.04)*PLANET_TIME_SCALE;advancePlanetMotion(0);}
 export function carryPointWithPlanet(p:Planet,point:T.Vector3){
   const motion=motions.get(p);if(!motion)return point;
   return point.sub(motion.previousCenter).applyQuaternion(motion.previousSpin.clone().invert()).applyQuaternion(motion.spin).add(p.center);
