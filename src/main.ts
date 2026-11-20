@@ -65,9 +65,7 @@ for(let i=0;i<1500;i++){
 }
 const dustGeo=new T.BufferGeometry();dustGeo.setAttribute('position',new T.Float32BufferAttribute(dustPositions,3));dustGeo.setAttribute('color',new T.Float32BufferAttribute(dustColors,3));
 scene.add(new T.Points(dustGeo,new T.PointsMaterial({size:13,vertexColors:true,transparent:true,opacity:.4,depthWrite:false})));
-scene.add(new T.HemisphereLight(0xbed5dd,0x24373e,1.25));
 const sunlight=new T.PointLight(0xffcf75,21000000,14000,2);sunlight.position.set(0,0,0);scene.add(sunlight);
-const fill=new T.DirectionalLight(0x78bed2,.7);fill.position.set(1200,200,100);scene.add(fill);
 for(const p of planets)scene.add(createPlanet(p));
 
 const sunPosition=new T.Vector3(0,0,0);
