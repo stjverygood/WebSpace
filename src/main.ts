@@ -1,5 +1,5 @@
 import * as T from 'three';
-import { createPlanet, nearest, planets, groundRadius, surfaceRadius, tickPlanetClock, carryPointWithPlanet, carryDirectionWithPlanet, planetRotationDelta, planetVelocity } from './world';
+import { createPlanet, nearest, planets, groundRadius, surfaceRadius } from './world';
 import { Expedition, createAstronaut } from './exploration';
 import { MobileControls } from './mobile';
 import { enterPortrait, needsPortrait } from './display';
@@ -65,31 +65,17 @@ for(let i=0;i<1500;i++){
 }
 const dustGeo=new T.BufferGeometry();dustGeo.setAttribute('position',new T.Float32BufferAttribute(dustPositions,3));dustGeo.setAttribute('color',new T.Float32BufferAttribute(dustColors,3));
 scene.add(new T.Points(dustGeo,new T.PointsMaterial({size:13,vertexColors:true,transparent:true,opacity:.4,depthWrite:false})));
-const sunlight=new T.PointLight(0xffcf75,21000000,14000,2);sunlight.position.set(0,0,0);scene.add(sunlight);
+scene.add(new T.HemisphereLight(0xbed5dd,0x24373e,1.6));
+const sunlight=new T.DirectionalLight(0xffe2bb,3.3);sunlight.position.set(-2000,1800,1800);scene.add(sunlight);
+const fill=new T.DirectionalLight(0x78bed2,.7);fill.position.set(1200,200,100);scene.add(fill);
 for(const p of planets)scene.add(createPlanet(p));
 
-const sunPosition=new T.Vector3(0,0,0);
-const sunGeometry=new T.IcosahedronGeometry(560,3),sunVertices=sunGeometry.getAttribute('position'),sunColors:number[]=[];
-const sunPalette=[0xe97832,0xffa43c,0xffc451,0xffdd70,0xffefaa].map(color=>new T.Color(color));
-const sunField=(x:number,y:number,z:number)=>{
-  const broad=Math.sin(x*7.4+z*3.1)*Math.cos(y*8.6-x*2.3);
-  const granule=Math.sin(x*19+y*15+Math.sin(z*7))*Math.cos(z*17-y*5);
-  const current=Math.sin((x+z)*12+Math.sin(y*8))*Math.cos((x-y)*9);
-  return .5+broad*.2+granule*.17+current*.13;
-};
-for(let i=0;i<sunVertices.count;i+=3){
-  const dirs:T.Vector3[]=[];let field=0;
-  for(let j=0;j<3;j++){const d=new T.Vector3().fromBufferAttribute(sunVertices,i+j).normalize();dirs.push(d);field+=sunField(d.x,d.y,d.z)/3;}
-  const color=sunPalette[T.MathUtils.clamp(Math.floor(field*5),0,4)].clone().multiplyScalar(.94+field*.12);
-  for(const d of dirs){const roughness=sunField(d.x,d.y,d.z);d.multiplyScalar(560*(.985+roughness*.032));sunVertices.setXYZ(i+dirs.indexOf(d),d.x,d.y,d.z);sunColors.push(color.r,color.g,color.b);}
-}
-sunGeometry.setAttribute('color',new T.Float32BufferAttribute(sunColors,3));sunGeometry.computeVertexNormals();
-const sun=new T.Mesh(sunGeometry,new T.MeshBasicMaterial({vertexColors:true,toneMapped:false}));sun.position.copy(sunPosition);scene.add(sun);
-sun.name='太阳';
+const sunPosition=new T.Vector3(-3200,1000,-5200);
+const sun=new T.Mesh(new T.SphereGeometry(64,24,16),new T.MeshBasicMaterial({color:0xffe2b0}));sun.position.copy(sunPosition);scene.add(sun);
 const glowCanvas=document.createElement('canvas');glowCanvas.width=128;glowCanvas.height=128;
 const ctx=glowCanvas.getContext('2d')!;const gradient=ctx.createRadialGradient(64,64,0,64,64,64);
-gradient.addColorStop(0,'rgba(255,242,184,.48)');gradient.addColorStop(.08,'rgba(255,211,112,.34)');gradient.addColorStop(.3,'rgba(255,166,63,.12)');gradient.addColorStop(1,'rgba(238,129,47,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
-const glow=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(glowCanvas),color:0xffd477,transparent:true,depthWrite:false,blending:T.AdditiveBlending}));glow.position.copy(sunPosition);glow.scale.set(2300,2300,1);scene.add(glow);
+gradient.addColorStop(0,'rgba(255,234,194,.65)');gradient.addColorStop(.08,'rgba(255,216,164,.32)');gradient.addColorStop(.3,'rgba(255,190,132,.08)');gradient.addColorStop(1,'rgba(255,170,110,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
+const glow=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(glowCanvas),transparent:true,depthWrite:false,blending:T.AdditiveBlending}));glow.position.copy(sunPosition);glow.scale.set(1900,1900,1);scene.add(glow);
 
 // One instanced draw call for the entire asteroid field.
 const rocks=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),new T.MeshStandardMaterial({color:0x7b7972,roughness:1,flatShading:true}),190);
@@ -259,16 +245,7 @@ function setupSettings(){
   }
 }
 setupSettings();
-function start(){
-  expedition.beginOnPlanet();lastControlState='';
-  const walker=expedition.walker,normal=walker.normal;
-  cameraLook.copy(walker.position).addScaledVector(normal,1.25);
-  camera.position.copy(cameraLook)
-    .addScaledVector(walker.forward,-settings.cameraDistance*Math.cos(walker.pitch))
-    .addScaledVector(normal,settings.cameraDistance*Math.sin(walker.pitch));
-  worldUp.copy(normal);camera.up.copy(normal).normalize();camera.lookAt(cameraLook);
-  active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();lock();
-}
+function start(){expedition.beginOnPlanet();lastControlState='';camera.position.copy(expedition.walker.position).addScaledVector(expedition.walker.forward,-settings.cameraDistance*.9).addScaledVector(expedition.walker.normal,settings.cameraDistance*.38);cameraLook.copy(expedition.walker.position).addScaledVector(expedition.walker.normal,1.25);worldUp.copy(expedition.walker.normal);active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();lock();}
 $('resume').onclick=resume;
 $('pause-button').onclick=pause;$('pause-shortcut').onclick=pause;
 $('show-instructions').onclick=()=>{
@@ -331,17 +308,6 @@ camera.position.copy(flight.position).add(new T.Vector3(0,7,24));
 function frame(now:number){
   const dt=Math.min((now-last)/1000,.04);last=now;
   if(!paused&&!orientationBlocked){clockTime+=dt;if(active){
-    tickPlanetClock(dt);
-    for(const body of planets){
-      const delta=planetRotationDelta(body),centerVelocity=planetVelocity(body,dt);
-      if(expedition.walker.body===body&&(expedition.onFoot||expedition.inVehicle)){
-        const walker=expedition.walker;carryPointWithPlanet(body,walker.position);carryDirectionWithPlanet(body,walker.forward);carryDirectionWithPlanet(body,walker.facing);carryDirectionWithPlanet(body,walker.velocity);
-      }
-      for(const vehicle of expedition.vehicles)if(vehicle.body===body){carryPointWithPlanet(body,vehicle.position);carryDirectionWithPlanet(body,vehicle.forward);vehicle.rotation.premultiply(delta);}
-      if(expedition.flight.landBody===body&&(expedition.flight.mode==='landed'||expedition.flight.mode==='landing'||expedition.flight.mode==='takeoff')){
-        carryPointWithPlanet(body,expedition.flight.position);carryPointWithPlanet(body,expedition.flight.destination);carryDirectionWithPlanet(body,expedition.flight.landNormal);carryDirectionWithPlanet(body,expedition.flight.velocity);expedition.flight.velocity.add(centerVelocity);expedition.flight.rotation.premultiply(delta);
-      }
-    }
     flight.keys.clear();for(const code of keyboardKeys)flight.keys.add(code);for(const code of mobile.keys)flight.keys.add(code);
     const steering=mobile.steering;flight.joystickX=steering.x*settings.joystickSensitivity;flight.joystickY=steering.y*settings.joystickSensitivity;
     expedition.update(dt);
@@ -391,12 +357,9 @@ function frame(now:number){
   // A chase camera must remain above terrain even when the player flies towards it.
   for(const p of planets){const radial=cameraPosition.clone().sub(p.center);const direction=radial.clone().normalize();const onSurface=onFoot||inVehicle;const safe=(onSurface?groundRadius(p,direction):surfaceRadius(p,direction))+(onSurface?.65:4);if(radial.length()<safe)cameraPosition.copy(p.center).addScaledVector(direction,safe);}
   const speedResponse=Math.min(flight.speed/80,1);
-  const positionFollow=inVehicle?32:28+speedResponse*5;
-  const lookFollow=inVehicle?36:30+speedResponse*3;
-  if(!paused&&!orientationBlocked){
-    if(onFoot){camera.position.copy(cameraPosition);cameraLook.copy(desiredLook);worldUp.copy(cameraUp);}
-    else{camera.position.lerp(cameraPosition,1-Math.exp(-dt*positionFollow));if(inVehicle){cameraLook.lerp(desiredLook,1-Math.exp(-dt*lookFollow));worldUp.lerp(cameraUp,1-Math.exp(-dt*18));}else{cameraLook.copy(desiredLook);worldUp.copy(cameraUp);}}
-  }
+  const positionFollow=onFoot?22:inVehicle?24:28+speedResponse*5;
+  const lookFollow=onFoot?26:inVehicle?28:30+speedResponse*3;
+  if(!paused&&!orientationBlocked){camera.position.lerp(cameraPosition,1-Math.exp(-dt*positionFollow));if(onFoot||inVehicle){cameraLook.lerp(desiredLook,1-Math.exp(-dt*lookFollow));worldUp.lerp(cameraUp,1-Math.exp(-dt*12));}else{cameraLook.copy(desiredLook);worldUp.copy(cameraUp);}}
   // Clamp the interpolated camera too, so entering a hillside never clips through it.
   if(onFoot||inVehicle){const body=onFoot?walker.body:groundVehicle.body;const radial=camera.position.clone().sub(body.center);const direction=radial.clone().normalize();const safe=groundRadius(body,direction)+.65;if(radial.length()<safe)camera.position.copy(body.center).addScaledVector(direction,safe);}
   camera.up.copy(worldUp).normalize();camera.lookAt(cameraLook);

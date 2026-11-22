@@ -1,6 +1,6 @@
 import * as T from 'three';
 import { Flight } from './flight.ts';
-import { groundRadius, nearbyParkedVehicle, planets, surfaceObstacles, type Planet } from './world.ts';
+import { groundRadius, planets, surfaceObstacles, type Planet } from './world.ts';
 
 const UP=new T.Vector3(0,1,0);
 const FORWARD=new T.Vector3(0,0,-1);
@@ -30,10 +30,6 @@ export class GroundVehicle {
   get normal(){return this.position.clone().sub(this.body.center).normalize();}
   spawn(normal:T.Vector3,heading:T.Vector3){
     const n=surfaceNormal(this.body,normal,2.8);
-    this.spawnAtNormal(n,heading);
-  }
-  spawnAtNormal(normal:T.Vector3,heading:T.Vector3){
-    const n=normal.clone().normalize();
     this.position.copy(this.body.center).addScaledVector(n,groundRadius(this.body,n)+.04);
     this.forward.copy(heading).addScaledVector(n,-heading.dot(n));
     if(this.forward.lengthSq()<.001)this.forward.copy(FORWARD).addScaledVector(n,-FORWARD.dot(n));
@@ -62,8 +58,7 @@ export class GroundVehicle {
     this.updateRotation();
   }
   private updateRotation(){
-    const normal=this.normal,right=new T.Vector3().crossVectors(this.forward,normal).normalize();
-    this.rotation.setFromRotationMatrix(new T.Matrix4().makeBasis(right,normal,this.forward.clone().negate()));
+    this.rotation.setFromRotationMatrix(new T.Matrix4().lookAt(new T.Vector3(),this.forward,this.normal));
   }
 }
 
@@ -94,7 +89,7 @@ export class Walker {
     this.forward.normalize();this.facing.copy(this.forward);this.velocity.set(0,0,0);
     this.verticalSpeed=0;this.pitch=.25;this.grounded=true;this.jumpBuffer=0;this.coyoteTime=.1;this.travel=0;
   }
-  look(x:number,y:number){this.forward.applyAxisAngle(this.normal,-x*.0032).normalize();this.pitch=T.MathUtils.clamp(this.pitch+y*.0032,-1.2,1.05);}
+  look(x:number,y:number){this.forward.applyAxisAngle(this.normal,-x*.0032).normalize();this.pitch=T.MathUtils.clamp(this.pitch+y*.0032,-.3,1.05);}
   jump(){this.jumpBuffer=.14;}
   update(dt:number,shipPosition?:T.Vector3,vehiclePosition?:T.Vector3){
     dt=Math.min(dt,.04);
@@ -151,14 +146,13 @@ export class Expedition {
   onFoot=false;
   inVehicle=false;
   pendingExit=false;
-  mountedParking:ReturnType<typeof nearbyParkedVehicle>|null=null;
   onNotice=(message:string)=>{void message;};
   constructor(){this.flight.onNotice=message=>this.onNotice(message);}
   get vehicle(){return this.vehicles.find(v=>v.body===(this.onFoot||this.inVehicle?this.walker.body:this.flight.local.body))??this.vehicles[0];}
   get vehicleDistance(){return this.walker.position.distanceTo(this.vehicle.position);}
   get shipDistance(){return (this.inVehicle?this.vehicle.position:this.walker.position).distanceTo(this.flight.position);}
   get canBoard(){return this.onFoot&&this.shipDistance<9&&this.walker.grounded;}
-  get canBoardVehicle(){return this.onFoot&&this.walker.grounded&&(this.vehicleDistance<5||Boolean(nearbyParkedVehicle(this.walker.body,this.walker.position,5)));}
+  get canBoardVehicle(){return this.onFoot&&this.vehicleDistance<5&&this.walker.grounded;}
   reset(){this.onFoot=false;this.inVehicle=false;this.pendingExit=false;this.flight.reset();}
   beginOnPlanet(){
     this.reset();const body=planets[0];
@@ -166,7 +160,7 @@ export class Expedition {
     const tangent=new T.Vector3().crossVectors(towardOrigin,UP).normalize();
     const playerNormal=surfaceNormal(body,towardOrigin,1);
     const roverNormal=surfaceNormal(body,playerNormal.clone().applyAxisAngle(tangent,.12),2.8);
-    const shipNormal=playerNormal.clone().applyAxisAngle(tangent,.025).normalize();
+    const shipNormal=surfaceNormal(body,playerNormal.clone().applyAxisAngle(tangent,.78),6);
     const playerPoint=body.center.clone().addScaledVector(playerNormal,groundRadius(body,playerNormal)+.04);
     const roverPoint=body.center.clone().addScaledVector(roverNormal,groundRadius(body,roverNormal)+.04);
     const roverHeading=roverPoint.clone().sub(playerPoint).addScaledVector(playerNormal,-roverPoint.clone().sub(playerPoint).dot(playerNormal)).normalize();
@@ -206,16 +200,7 @@ export class Expedition {
       this.flight.keys.clear();this.onNotice('已下车');return;
     }
     if(this.onFoot){
-      if(this.canBoardVehicle){
-        const parked=nearbyParkedVehicle(this.walker.body,this.walker.position,5);
-        if(parked?.parkedVehicle){
-          const vehicle=this.vehicle,normal=parked.position.clone().sub(vehicle.body.center).normalize(),root=parked.parkedVehicle;
-          root.updateWorldMatrix(true,false);const orientation=root.getWorldQuaternion(new T.Quaternion());
-          const heading=new T.Vector3(0,0,-1).applyQuaternion(orientation).projectOnPlane(normal).normalize();
-          vehicle.spawnAtNormal(normal,heading);parked.vehicleBlocking=false;root.visible=false;this.mountedParking=parked;
-        }
-        this.inVehicle=true;this.onFoot=false;this.flight.keys.clear();this.onNotice('已上车');return;
-      }
+      if(this.canBoardVehicle){this.inVehicle=true;this.onFoot=false;this.flight.keys.clear();this.onNotice('已上车 · W/S 前进后退 · A/D 转向 · F 下车');return;}
       if(!this.canBoard){this.onNotice(this.shipDistance>=9?'请靠近飞船至 9 m 内登船':'请落地后再登船');return;}
       this.onFoot=false;this.flight.keys.clear();this.flight.mouseX=0;this.flight.mouseY=0;
       this.onNotice('已登船 · R 起飞 · F 再次下船');return;

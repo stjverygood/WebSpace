@@ -4,15 +4,13 @@ const UP=new T.Vector3(0,1,0);
 export interface Planet {
   name: string; code: string; description: string; type: string;
   center: T.Vector3; radius: number; seed: number; colors: number[];
-  atmosphere: number; gravity: number; ring?: boolean; parent?: Planet;
+  atmosphere: number; gravity: number; ring?: boolean;
 }
 export const planets: Planet[] = [
-  {name:'地球',code:'EARTH · 03',description:'海洋、山脉，以及尚未被命名的远方。',type:'海洋 / 山脉',center:new T.Vector3(910,-80,-2859),radius:300,seed:1.7,colors:[0x24555e,0x41818a,0x8aa99a,0xb7baa1,0xd7d0b3],gravity:9.8,atmosphere:0x72b8c9},
-  {name:'火星',code:'MARS · 04',description:'风穿过赤色峡谷，时间在这里慢了下来。',type:'荒漠 / 峡谷',center:new T.Vector3(-4333,-310,-2066),radius:210,seed:4.3,colors:[0x714442,0x995b4c,0xb97959,0xd79c72,0xe0c29c],gravity:3.7,atmosphere:0xdc9171},
-  {name:'土星',code:'SATURN · 06',description:'穿过冰尘构成的光环，抵达安静的灰色高地。',type:'岩原 / 冰尘环',center:new T.Vector3(-2468,430,-7400),radius:440,seed:8.6,colors:[0x535c70,0x7a8191,0xa7a9ac,0xbfc1b7,0xe1dbc5],gravity:14.5,atmosphere:0xaab2de,ring:true},
+  {name:'苍蓝星',code:'AURELIA · 04B',description:'海洋、山脉，以及尚未被命名的远方。',type:'海洋 / 山脉',center:new T.Vector3(350,-80,-1100),radius:300,seed:1.7,colors:[0x24555e,0x41818a,0x8aa99a,0xb7baa1,0xd7d0b3],gravity:9.8,atmosphere:0x72b8c9},
+  {name:'赤砂星',code:'EMBER · 09C',description:'风穿过赤色峡谷，时间在这里慢了下来。',type:'荒漠 / 峡谷',center:new T.Vector3(-1050,-310,-500),radius:210,seed:4.3,colors:[0x714442,0x995b4c,0xb97959,0xd79c72,0xe0c29c],gravity:3.7,atmosphere:0xdc9171},
+  {name:'环带星',code:'VESPER · 12A',description:'穿过冰尘构成的光环，抵达安静的灰色高地。',type:'岩原 / 冰尘环',center:new T.Vector3(-900,430,-2700),radius:440,seed:8.6,colors:[0x535c70,0x7a8191,0xa7a9ac,0xbfc1b7,0xe1dbc5],gravity:14.5,atmosphere:0xaab2de,ring:true},
 ];
-const aurelia=planets[0];
-planets.push({name:'月球',code:'LUNA · 01',description:'地球的天然卫星，布满静谧的灰色高地。',type:'月球 / 高地',center:aurelia.center.clone().add(new T.Vector3(0,0,650)),radius:68,seed:12.4,colors:[0x555d65,0x747e83,0x969b96,0xb7b5a9,0xd0cdbc],gravity:1.62,atmosphere:0x8398ad,parent:aurelia});
 
 // The same continuous radial field drives the rendered vertices and collisions.
 export function terrain(p: Planet, n: T.Vector3): number {
@@ -23,8 +21,7 @@ export function terrain(p: Planet, n: T.Vector3): number {
   return (broad+detail+ridges-.12)*p.radius*.045;
 }
 export function surfaceRadius(p: Planet,n: T.Vector3): number {
-  const motion=motions.get(p);const localNormal=motion?n.clone().applyQuaternion(motion.spin.clone().invert()):n;
-  return p.radius+Math.max(p.seed===1.7?0:-p.radius*.02, terrain(p,localNormal));
+  return p.radius+Math.max(p.seed===1.7?0:-p.radius*.02, terrain(p,n));
 }
 export function nearest(position: T.Vector3) {
   let body=planets[0],distance=Infinity;
@@ -34,9 +31,7 @@ export function nearest(position: T.Vector3) {
 }
 
 const groundMeshes=new Map<Planet,T.Mesh>();
-interface PlanetMotion { group:T.Group; baseCenter:T.Vector3; initialPhase:number; orbitRadius:number; orbitPeriod:number; spinPeriod:number; spin:T.Quaternion; previousCenter:T.Vector3; previousSpin:T.Quaternion; obstacleLocal:T.Vector3[] }
-const motions=new Map<Planet,PlanetMotion>();
-export interface SurfaceObstacle { position:T.Vector3; radius:number; height:number; vehicleBlocking?:boolean; parkedVehicle?:T.Group }
+export interface SurfaceObstacle { position:T.Vector3; radius:number; height:number; vehicleBlocking?:boolean }
 const obstacles=new Map<Planet,SurfaceObstacle[]>();
 const groundRay=new T.Raycaster();
 // Match the actual flat triangles under the astronaut's feet, not the smooth
@@ -44,46 +39,11 @@ const groundRay=new T.Raycaster();
 export function groundRadius(p:Planet,normal:T.Vector3):number {
   const mesh=groundMeshes.get(p);
   if(!mesh)return surfaceRadius(p,normal);
-  mesh.updateMatrixWorld(true);
-  const origin=p.center.clone().addScaledVector(normal,p.radius+100);
-  groundRay.set(origin,normal.clone().negate());
+  groundRay.set(normal.clone().multiplyScalar(p.radius+100),normal.clone().negate());
   const hit=groundRay.intersectObject(mesh,false)[0];
-  return hit?hit.point.distanceTo(p.center):surfaceRadius(p,normal);
+  return hit?hit.point.length():surfaceRadius(p,normal);
 }
-export function surfaceObstacles(p:Planet):readonly SurfaceObstacle[]{return (obstacles.get(p)??[]).filter(item=>!item.parkedVehicle||item.parkedVehicle.visible);}
-export function nearbyParkedVehicle(p:Planet,position:T.Vector3,distance:number){
-  return (obstacles.get(p)??[]).filter(item=>item.parkedVehicle?.visible).sort((a,b)=>a.position.distanceToSquared(position)-b.position.distanceToSquared(position)).find(item=>item.position.distanceTo(position)<distance);
-}
-
-export function advancePlanetMotion(dt:number){
-  for(const [planet,motion] of motions){
-    motion.previousCenter.copy(planet.center);motion.previousSpin.copy(motion.spin);
-    const phase=motion.initialPhase+clockTimeForPlanets/motion.orbitPeriod*Math.PI*2;
-    if(planet.parent){planet.center.copy(planet.parent.center).add(new T.Vector3(Math.cos(phase)*motion.orbitRadius,motion.baseCenter.y-motion.baseCenter.y,Math.sin(phase)*motion.orbitRadius));}
-    else planet.center.set(Math.cos(phase)*motion.orbitRadius,motion.baseCenter.y,Math.sin(phase)*motion.orbitRadius);
-    motion.spin.setFromAxisAngle(UP,clockTimeForPlanets/motion.spinPeriod*Math.PI*2);
-    motion.group.position.copy(planet.center);motion.group.quaternion.copy(motion.spin);motion.group.updateMatrixWorld(true);
-    const list=obstacles.get(planet)??[];
-    for(let i=0;i<list.length;i++)list[i].position.copy(motion.obstacleLocal[i]).applyQuaternion(motion.spin).add(planet.center);
-  }
-}
-let clockTimeForPlanets=0;
-const PLANET_TIME_SCALE=10;
-export function tickPlanetClock(dt:number){clockTimeForPlanets+=Math.min(dt,.04)*PLANET_TIME_SCALE;advancePlanetMotion(0);}
-export function carryPointWithPlanet(p:Planet,point:T.Vector3){
-  const motion=motions.get(p);if(!motion)return point;
-  return point.sub(motion.previousCenter).applyQuaternion(motion.previousSpin.clone().invert()).applyQuaternion(motion.spin).add(p.center);
-}
-export function carryDirectionWithPlanet(p:Planet,direction:T.Vector3){
-  const motion=motions.get(p);if(!motion)return direction;
-  return direction.applyQuaternion(motion.previousSpin.clone().invert()).applyQuaternion(motion.spin);
-}
-export function planetRotationDelta(p:Planet){
-  const motion=motions.get(p);return motion?motion.spin.clone().multiply(motion.previousSpin.clone().invert()):new T.Quaternion();
-}
-export function planetVelocity(p:Planet,dt:number){
-  const motion=motions.get(p);return motion?p.center.clone().sub(motion.previousCenter).multiplyScalar(1/Math.max(dt,.001)):new T.Vector3();
-}
+export function surfaceObstacles(p:Planet):readonly SurfaceObstacle[]{return obstacles.get(p)??[];}
 
 function addSettlement(p:Planet,group:T.Group,colliders:SurfaceObstacle[]){
   const scale=T.MathUtils.clamp(p.radius/300,.72,1.25);
@@ -132,8 +92,7 @@ function addSettlement(p:Planet,group:T.Group,colliders:SurfaceObstacle[]){
     const normal=anchor.clone().addScaledVector(east,x/p.radius).addScaledVector(north,z/p.radius).normalize();
     const object=new T.Group();object.position.copy(pointAt(x,z,.18));
     const forward=north.clone().applyAxisAngle(normal,heading);
-    const right=new T.Vector3().crossVectors(forward,normal).normalize();
-    object.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(right,normal,forward.clone().negate()));group.add(object);return object;
+    object.quaternion.setFromRotationMatrix(new T.Matrix4().lookAt(new T.Vector3(),forward,normal));group.add(object);return object;
   };
   const building=(kind:number,x:number,z:number,heading:number)=>{
     const root=place(x,z,heading),model=new T.Group();model.scale.setScalar(scale);root.add(model);
@@ -179,7 +138,7 @@ function addSettlement(p:Planet,group:T.Group,colliders:SurfaceObstacle[]){
       const wheel=new T.Mesh(new T.CylinderGeometry(kind===2?.62:.57,kind===2?.62:.57,.42,8),dark);wheel.rotation.z=Math.PI/2;wheel.position.set(side*1.18,.58,z);model.add(wheel);
       const hub=new T.Mesh(new T.CylinderGeometry(.2,.2,.44,6),steel);hub.rotation.z=Math.PI/2;hub.position.set(side*1.18,.58,z);model.add(hub);
     }
-    colliders.push({position:p.center.clone().add(pointAt(x,z,1.1*scale)),radius:4.3*scale,height:2.5*scale,vehicleBlocking:true,parkedVehicle:root});
+    colliders.push({position:p.center.clone().add(pointAt(x,z,1.1*scale)),radius:4.3*scale,height:2.5*scale,vehicleBlocking:true});
   };
   [
     [0,112,16,.25],[1,125,86,-.12],[2,8,106,.62],[3,168,-18,.36],[4,-48,82,-.3],
@@ -211,7 +170,7 @@ export function createPlanet(p:Planet):T.Group {
   geo.setAttribute('color',new T.Float32BufferAttribute(colors,3));geo.computeVertexNormals();
   const ground=new T.Mesh(geo,new T.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:.92,metalness:.04}));
   group.add(ground);
-  const collisionGround=new T.Mesh(geo,new T.MeshBasicMaterial({colorWrite:false,depthWrite:false}));group.add(collisionGround);groundMeshes.set(p,collisionGround);
+  groundMeshes.set(p,new T.Mesh(geo,new T.MeshBasicMaterial()));
   const colliders:SurfaceObstacle[]=[];obstacles.set(p,colliders);
   // Surface outcrops provide a human-scale reference during low flight.
   const outcrops=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),new T.MeshStandardMaterial({color:p.colors[3],roughness:.95,flatShading:true}),420);
@@ -243,12 +202,6 @@ export function createPlanet(p:Planet):T.Group {
       mesh.rotation.x=Math.PI/2;rings.add(mesh);
     }group.add(rings);
   }
-  const orbitOffset=p.parent?p.center.clone().sub(p.parent.center):p.center;
-  const orbitRadius=p.parent?orbitOffset.length():Math.hypot(p.center.x,p.center.z);
-  const initialPhase=Math.atan2(orbitOffset.z,orbitOffset.x);
-  const index=planets.indexOf(p);
-  const collidersLocal=colliders.map(item=>item.position.clone().sub(p.center));
-  motions.set(p,{group,baseCenter:p.center.clone(),initialPhase,orbitRadius,orbitPeriod:p.parent?320:([3600,5400,7200][Math.max(0,index)]??5400),spinPeriod:p.parent?1100:([900,1400,2100][Math.max(0,index)]??1400),spin:new T.Quaternion(),previousCenter:p.center.clone(),previousSpin:new T.Quaternion(),obstacleLocal:collidersLocal});
   return group;
 }
 
