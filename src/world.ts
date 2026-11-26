@@ -33,6 +33,29 @@ export function nearest(position: T.Vector3) {
 const groundMeshes=new Map<Planet,T.Mesh>();
 export interface SurfaceObstacle { position:T.Vector3; radius:number; height:number; vehicleBlocking?:boolean }
 const obstacles=new Map<Planet,SurfaceObstacle[]>();
+export type WeaponKind='pistol'|'rifle'|'knife';
+export interface WeaponPickup {planet:Planet;kind:WeaponKind;root:T.Group;picked:boolean}
+export const weaponPickups:WeaponPickup[]=[];
+export function nearestWeaponPickup(planet:Planet,position:T.Vector3,range=4){
+  let best:WeaponPickup|null=null,distance=range;
+  for(const item of weaponPickups){if(item.planet!==planet||item.picked)continue;item.root.updateWorldMatrix(true,false);const point=item.root.getWorldPosition(new T.Vector3()),d=point.distanceTo(position);if(d<distance){best=item;distance=d;}}
+  return best;
+}
+function addWeaponPickups(p:Planet,planetRoot:T.Group,index:number){
+  let seed=Math.floor(p.seed*1000)+index*7919;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  const kinds:WeaponKind[]=['pistol','knife','rifle','pistol'];
+  kinds.forEach((kind,i)=>{
+    const y=rnd()*1.5-.75,a=rnd()*Math.PI*2,n=new T.Vector3(Math.sqrt(1-y*y)*Math.cos(a),y,Math.sqrt(1-y*y)*Math.sin(a));
+    const root=new T.Group();root.position.copy(n).multiplyScalar(surfaceRadius(p,n)+.8);root.quaternion.setFromUnitVectors(UP,n);
+    const dark=new T.MeshStandardMaterial({color:0x202a30,roughness:.55,metalness:.55,flatShading:true});
+    const metal=new T.MeshStandardMaterial({color:kind==='knife'?0xc7d0cb:0x76878a,roughness:.35,metalness:.72,flatShading:true});
+    const body=new T.Mesh(kind==='knife'?new T.ConeGeometry(.12,.9,5):new T.BoxGeometry(kind==='rifle'?.16:.2,.18,kind==='rifle'?1.35:.62),metal);body.rotation.x=kind==='knife'?Math.PI/2:0;root.add(body);
+    if(kind!=='knife'){const grip=new T.Mesh(new T.BoxGeometry(.15,.32,.18),dark);grip.position.set(0,-.17,.14);root.add(grip);const barrel=new T.Mesh(new T.CylinderGeometry(.035,.035,kind==='rifle'?.62:.27,6),dark);barrel.rotation.x=Math.PI/2;barrel.position.z=kind==='rifle'?.72:.43;root.add(barrel);}
+    else{const handle=new T.Mesh(new T.CylinderGeometry(.045,.055,.34,6),dark);handle.position.y=-.48;root.add(handle);}
+    const glow=new T.Mesh(new T.IcosahedronGeometry(.16,0),new T.MeshBasicMaterial({color:kind==='knife'?0xffd27a:0x8de3e9}));glow.position.y=.22;root.add(glow);
+    planetRoot.add(root);weaponPickups.push({planet:p,kind,root,picked:false});
+  });
+}
 const groundRay=new T.Raycaster();
 // Match the actual flat triangles under the astronaut's feet, not the smooth
 // procedural field used to construct the planet's vertices.
@@ -202,6 +225,7 @@ export function createPlanet(p:Planet):T.Group {
       mesh.rotation.x=Math.PI/2;rings.add(mesh);
     }group.add(rings);
   }
+  addWeaponPickups(p,group,planets.indexOf(p));
   return group;
 }
 

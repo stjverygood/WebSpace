@@ -1,5 +1,5 @@
 import * as T from 'three';
-import { createPlanet, nearest, planets, groundRadius, surfaceRadius } from './world';
+import { createPlanet, nearest, planets, groundRadius, surfaceRadius, nearestWeaponPickup, type WeaponKind } from './world';
 import { Expedition, createAstronaut } from './exploration';
 import { MobileControls } from './mobile';
 import { enterPortrait, needsPortrait } from './display';
@@ -38,7 +38,7 @@ const scene=new T.Scene();scene.background=new T.Color(0x050b13);
 const camera=new T.PerspectiveCamera(53,innerWidth/innerHeight,.15,18000);
 const expedition=new Expedition();
 const flight=expedition.flight;
-let active=false,paused=false,drag=false,uiTime=0,noticeTimer=0,lastControlState='',vehicleCameraYaw=0,vehicleCameraPitch=.12;
+let active=false,paused=false,drag=false,uiTime=0,noticeTimer=0,lastControlState='',vehicleCameraYaw=0,vehicleCameraPitch=.12,equippedWeapon:WeaponKind|null=null;
 let orientationBlocked=needsPortrait(innerWidth,innerHeight,touchLayout());
 let fullscreenTransition=false;
 let clockTime=0,last=performance.now();
@@ -173,7 +173,15 @@ function initAudio(){
 }
 $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.resume();$('sound').textContent=`声音：${soundEnabled?'开':'关'}`;$('sound').setAttribute('aria-pressed',String(soundEnabled));}catch{notify('此浏览器暂不支持音频');}};
 
-const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw-=x*.004*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+y*.004*settings.viewSensitivity,-.08,.72);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact:()=>expedition.interact(),takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();}});
+function useWeapon(){
+  if(!active||paused||!expedition.onFoot||!equippedWeapon)return;
+  const direction=camera.getWorldDirection(new T.Vector3()),origin=camera.position.clone().addScaledVector(direction,.55),length=equippedWeapon==='knife'?2.2:45;
+  const geometry=new T.BufferGeometry().setFromPoints([origin,origin.clone().addScaledVector(direction,length)]);
+  const material=new T.LineBasicMaterial({color:equippedWeapon==='knife'?0xffd27a:0x9cecff,transparent:true,opacity:.9});
+  const effect=new T.Line(geometry,material);scene.add(effect);window.setTimeout(()=>{scene.remove(effect);geometry.dispose();material.dispose();},equippedWeapon==='knife'?140:220);
+}
+function interact(){if(expedition.onFoot){const pickup=nearestWeaponPickup(expedition.walker.body,expedition.walker.position);if(pickup){pickup.picked=true;pickup.root.visible=false;equippedWeapon=pickup.kind;notify(`已拾取${pickup.kind==='knife'?'近战刀':pickup.kind==='rifle'?'步枪':'手枪'} · 点击攻击键使用`);return;}}expedition.interact();}
+const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw-=x*.004*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+y*.004*settings.viewSensitivity,-.08,.72);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact,takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();},useWeapon});
 function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
   const blocked=needsPortrait(innerWidth,innerHeight,touchLayout());
@@ -270,6 +278,7 @@ $('return-menu').onclick=()=>{
 };
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
 addEventListener('mouseup',()=>drag=false);
+addEventListener('mousedown',e=>{if(e.button===0&&expedition.onFoot&&equippedWeapon)useWeapon();});
 addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){const dx=T.MathUtils.clamp(e.movementX,-80,80),dy=T.MathUtils.clamp(e.movementY,-80,80);if(expedition.inVehicle){vehicleCameraYaw-=dx*.0024*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+dy*.0024*settings.viewSensitivity,-.08,.72);}else{flight.mouseX+=dx;flight.mouseY+=dy;}}});
 document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement){drag=false;flight.mouseX=0;flight.mouseY=0;}});
 addEventListener('keydown',e=>{
@@ -289,7 +298,7 @@ addEventListener('keydown',e=>{
   if((e.code==='Space'&&expedition.onFoot||['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code))&&active)e.preventDefault();
   if(e.code==='Escape'&&!e.repeat){pause();return;}
   if(!active||paused||orientationBlocked||e.repeat)return;
-  if(e.code==='KeyF'){expedition.interact();return;}
+  if(e.code==='KeyF'){interact();return;}
   if(e.code==='KeyR'){expedition.takeoff();return;}
   if(e.code==='Space'&&expedition.onFoot){expedition.walker.jump();return;}
   keyboardKeys.add(e.code);
@@ -297,7 +306,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>keyboardKeys.delete(e.code));
 addEventListener('blur',()=>{if(active&&!paused&&!fullscreenTransition)pause();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&active)pause();});
-$('landing-prompt').onclick=()=>expedition.interact();
+$('landing-prompt').onclick=()=>interact();
 $('takeoff-prompt').onclick=()=>expedition.takeoff();
 addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,touchLayout()?1.5:1.8));camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();document.body.classList.toggle('touch-layout',touchLayout());release();updateOrientation();});
 screen.orientation?.addEventListener('change',updateOrientation);
@@ -317,6 +326,7 @@ function frame(now:number){
   if(lastControlState!==controlState){keyboardKeys.clear();mobile.reset();flight.keys.clear();if(controlState==='vehicle'){vehicleCameraYaw=0;vehicleCameraPitch=.12;}flight.mouseX=0;flight.mouseY=0;lastControlState=controlState;}
   const local=onFoot?{...nearest(walker.position),altitude:walker.altitude}:inVehicle?{body:groundVehicle.body,normal:groundVehicle.normal,altitude:groundVehicle.position.distanceTo(groundVehicle.body.center)-groundRadius(groundVehicle.body,groundVehicle.normal)}:flight.local;
   const near=T.MathUtils.clamp(1-local.altitude/110,0,1);
+  const nearbyWeapon=onFoot?nearestWeaponPickup(walker.body,walker.position):null;
   document.body.classList.toggle('on-foot',onFoot);
   document.body.classList.toggle('in-vehicle',inVehicle);
   document.body.classList.toggle('ship-grounded',active&&!onFoot&&!inVehicle&&(flight.mode==='landed'||flight.mode==='takeoff'));
@@ -386,15 +396,16 @@ function frame(now:number){
     if(currentPlanetName.textContent!==local.body.name)currentPlanetName.textContent=local.body.name;
     $('boost-key').textContent=onFoot?'SHIFT':'W / S';$('boost-label').textContent=onFoot?'奔跑':inVehicle?'驾驶':'推进';$('space-label').textContent='跳跃';$('space-control').classList.toggle('hidden',!onFoot);$('interact-label').textContent=onFoot?'上车 / 登船':inVehicle?'下车':'下船';
     const canLand=active&&(onFoot?expedition.canBoard||expedition.canBoardVehicle:inVehicle||local.altitude<90&&flight.speed<20||flight.mode==='landed');
-    $('landing-prompt').classList.toggle('hidden',!canLand||!onFoot&&(flight.mode==='landing'||flight.mode==='takeoff'));
-    $('landing-text').textContent=onFoot?expedition.canBoardVehicle?'上车':'登上飞船':inVehicle?'下车':flight.mode==='landed'?'离开飞船 · 地表探索':'降落并下船';
+    $('landing-prompt').classList.toggle('hidden',!canLand&&!nearbyWeapon||!onFoot&&(flight.mode==='landing'||flight.mode==='takeoff'));
+    $('landing-text').textContent=onFoot?nearbyWeapon?'拾取武器':expedition.canBoardVehicle?'上车':'登上飞船':inVehicle?'下车':flight.mode==='landed'?'离开飞船 · 地表探索':'降落并下船';
     const touchAction=$('touch-action');
     const touchActionLabel=onFoot?expedition.canBoardVehicle?'上车':'登船':inVehicle?'下车':'下船';
     const touchActionIcon=onFoot?expedition.canBoardVehicle?'vehicle':'ship':inVehicle?'exit':'land';
     if(touchAction.dataset.icon!==touchActionIcon){touchAction.dataset.icon=touchActionIcon;touchAction.innerHTML=INTERACTION_ICONS[touchActionIcon];}
     if(touchAction.getAttribute('aria-label')!==touchActionLabel)touchAction.setAttribute('aria-label',touchActionLabel);
-    $('touch-action').classList.toggle('hidden',!inVehicle&&(onFoot?!(expedition.canBoard||expedition.canBoardVehicle):!canLand));
-    $<HTMLButtonElement>('touch-action').disabled=onFoot?!(expedition.canBoard||expedition.canBoardVehicle):inVehicle?false:!canLand||flight.mode==='landing'||flight.mode==='takeoff';
+    $('touch-action').classList.toggle('hidden',!inVehicle&&(onFoot?!(expedition.canBoard||expedition.canBoardVehicle)&&!nearbyWeapon:!canLand));
+    $<HTMLButtonElement>('touch-action').disabled=onFoot?!(expedition.canBoard||expedition.canBoardVehicle)&&!nearbyWeapon:inVehicle?false:!canLand||flight.mode==='landing'||flight.mode==='takeoff';
+    $('touch-weapon').classList.toggle('hidden',!onFoot||!equippedWeapon);
     $('touch-launch').classList.toggle('hidden',onFoot||inVehicle||flight.mode!=='landed');
     $('takeoff-prompt').classList.toggle('hidden',!active||onFoot||inVehicle||flight.mode!=='landed');
   }

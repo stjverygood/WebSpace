@@ -7,6 +7,7 @@ export interface MobileActions {
   interact: () => void;
   takeoff: () => void;
   jump: () => void;
+  useWeapon: () => void;
 }
 
 /** Each finger owns its input until pointerup/cancel; releasing one never cancels another. */
@@ -119,6 +120,8 @@ export class MobileControls {
     jumpButton.onclick = () => {
       if (actions.enabled()) actions.jump();
     };
+    const weaponButton=document.getElementById('touch-weapon')!;
+    weaponButton.onclick=()=>{if(actions.enabled())actions.useWeapon();};
     addEventListener("pointerup", (e) => this.sources.delete(e.pointerId));
     addEventListener("pointercancel", (e) => this.sources.delete(e.pointerId));
   }
