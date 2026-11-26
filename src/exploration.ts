@@ -1,6 +1,6 @@
 import * as T from 'three';
 import { Flight } from './flight.ts';
-import { groundRadius, planets, surfaceObstacles, type Planet } from './world.ts';
+import { groundRadius, planets, surfaceObstacles, type Planet, type WeaponKind } from './world.ts';
 
 const UP=new T.Vector3(0,1,0);
 const FORWARD=new T.Vector3(0,0,-1);
@@ -245,7 +245,25 @@ export function createAstronaut(){
     const arm=new T.Group();arm.position.set(side*.42,1.38,0);box(arm,suit,[.23,.48,.25],[0,-.22,0]);box(arm,dark,[.22,.15,.24],[0,-.52,0]);root.add(arm);arms.push(arm);
     const leg=new T.Group();leg.position.set(side*.18,.74,0);box(leg,suit,[.25,.5,.28],[0,-.24,0]);box(leg,dark,[.28,.2,.4],[0,-.62,-.05]);root.add(leg);legs.push(leg);
   }
-  return {root,setOpacity(opacity:number){const alpha=T.MathUtils.clamp(opacity,0,1);for(const material of materials){material.opacity=alpha;material.transparent=alpha<.999;material.depthWrite=alpha>.995;}},animate(walker:Walker){
+  const weaponDark=new T.MeshStandardMaterial({color:0x202c32,metalness:.72,roughness:.38,flatShading:true});
+  const weaponMetal=new T.MeshStandardMaterial({color:0x81918e,metalness:.82,roughness:.28,flatShading:true});
+  const weaponGrip=new T.MeshStandardMaterial({color:0x394940,metalness:.2,roughness:.8,flatShading:true});
+  materials.push(weaponDark,weaponMetal,weaponGrip);
+  const handWeapons=new T.Group();handWeapons.position.set(0,-.52,-.12);arms[1].add(handWeapons);
+  const models=new Map<WeaponKind,T.Group>();
+  const weaponBox=(parent:T.Group,material:T.Material,size:[number,number,number],position:[number,number,number])=>{const mesh=new T.Mesh(new T.BoxGeometry(...size),material);mesh.position.set(...position);parent.add(mesh);return mesh;};
+  const makeWeapon=(kind:WeaponKind)=>{const model=new T.Group();
+    if(kind==='pistol'){
+      weaponBox(model,weaponDark,[.14,.12,.34],[0,.015,-.19]);weaponBox(model,weaponMetal,[.085,.065,.2],[0,.015,-.43]);weaponBox(model,weaponGrip,[.105,.24,.13],[0,-.14,-.045]);weaponBox(model,weaponMetal,[.16,.025,.16],[0,.09,-.18]);
+    }else if(kind==='rifle'){
+      weaponBox(model,weaponDark,[.14,.13,.58],[0,.015,-.29]);weaponBox(model,weaponMetal,[.065,.06,.48],[0,.015,-.8]);weaponBox(model,weaponGrip,[.13,.15,.28],[0,.015,.13]);weaponBox(model,weaponGrip,[.095,.25,.13],[0,-.15,-.25]);weaponBox(model,weaponDark,[.11,.26,.13],[0,-.15,-.43]);weaponBox(model,weaponMetal,[.09,.08,.18],[0,.12,-.26]);weaponBox(model,weaponDark,[.07,.06,.28],[0,.1,-.52]);
+    }else{
+      weaponBox(model,weaponGrip,[.1,.17,.13],[0,-.08,-.015]);weaponBox(model,weaponMetal,[.075,.045,.38],[0,.015,-.255]);const tip=new T.Mesh(new T.ConeGeometry(.044,.16,4),weaponMetal);tip.rotation.x=-Math.PI/2;tip.position.set(0,.015,-.52);model.add(tip);
+    }
+    model.visible=false;handWeapons.add(model);models.set(kind,model);
+  };
+  makeWeapon('pistol');makeWeapon('rifle');makeWeapon('knife');
+  return {root,setWeapon(kind:WeaponKind|null){for(const [weapon,model] of models)model.visible=weapon===kind;},setOpacity(opacity:number){const alpha=T.MathUtils.clamp(opacity,0,1);for(const material of materials){material.opacity=alpha;material.transparent=alpha<.999;material.depthWrite=alpha>.995;}},animate(walker:Walker){
     const gait=Math.sin(walker.travel*2.1)*Math.min(walker.speed/4.2,1)*.65;
     for(let i=0;i<2;i++){legs[i].rotation.x=walker.grounded?gait*(i===0?1:-1):-.28;arms[i].rotation.x=walker.grounded?-gait*(i===0?1:-1):-.5;arms[i].rotation.z=walker.grounded?(i===0?.08:-.08):(i===0?.35:-.35);}
     root.position.copy(walker.position);root.quaternion.copy(walker.rotation);

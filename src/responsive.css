@@ -208,6 +208,10 @@ button {
 .touch-note {
   display: none;
 }
+body:not(.touch-layout) #touch-controls,
+body:not(.touch-layout) #pause-button {
+  display: none !important;
+}
 .is-paused .landing-prompt,
 .is-paused .takeoff-prompt {
   visibility: hidden;

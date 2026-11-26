@@ -1,0 +1,109 @@
+.weapon-hud {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 13px;
+  border: 1px solid #b3d4c62b;
+  border-radius: 9px;
+  background: #0a171d99;
+  backdrop-filter: blur(9px);
+  color: #9bb2aa;
+  font-size: 10px;
+  letter-spacing: .7px;
+  white-space: nowrap;
+  text-shadow: 0 2px 12px #02090c;
+}
+.weapon-hud-label,
+.weapon-ammo-label {
+  color: #698780;
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+.weapon-hud strong {
+  min-width: 30px;
+  color: #e2eee7;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+}
+.weapon-hud-divider {
+  width: 1px;
+  height: 17px;
+  background: #b3d4c626;
+}
+.weapon-carried:not(.weapon-aiming) #reticle {
+  display: none;
+}
+.weapon-equipped .reticle {
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 0;
+  opacity: .8;
+  transform: translate(-50%, -50%);
+}
+.weapon-equipped .reticle::before,
+.weapon-equipped .reticle::after {
+  position: absolute;
+  content: '';
+  background: #e4f4e9;
+  filter: drop-shadow(0 0 3px #06110c);
+}
+.weapon-equipped .reticle::before {
+  width: 1px;
+  height: 25px;
+}
+.weapon-equipped .reticle::after {
+  width: 25px;
+  height: 1px;
+}
+.weapon-equipped .reticle span {
+  display: none;
+}
+.weapon-equipped .reticle div {
+  width: 3px;
+  height: 3px;
+  border: 1px solid #e4f4e9;
+  background: #071016;
+  box-shadow: 0 0 4px #06110c;
+}
+.weapon-aiming .reticle {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.12);
+}
+.weapon-aiming .weapon-hud {
+  border-color: #b8e6ce70;
+}
+@media (max-width: 700px) {
+  .weapon-hud {
+    gap: 6px;
+    min-height: 38px;
+    padding: 6px 8px;
+    border-radius: 7px;
+    font-size: 9px;
+  }
+  .weapon-hud-label,
+  .weapon-ammo-label {
+    font-size: 7px;
+  }
+  .weapon-hud strong {
+    min-width: 26px;
+    font-size: 10px;
+  }
+  .touch-layout.weapon-equipped .reticle {
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+@media (max-width: 370px) {
+  .touch-layout .weapon-hud-label,
+  .touch-layout .weapon-ammo-label {
+    display: none;
+  }
+  .touch-layout .weapon-hud {
+    gap: 5px;
+    padding: 6px;
+  }
+}

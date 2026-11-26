@@ -7,6 +7,7 @@ import './style.css';
 import './surface.css';
 import './responsive.css';
 import './landscape.css';
+import './weapons.css';
 
 const $=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
 const canvas=$<HTMLCanvasElement>('universe');
@@ -25,7 +26,7 @@ function loadSettings():GameSettings{
   catch{return{...DEFAULT_SETTINGS};}
 }
 const settings=loadSettings();
-const touchLayout=()=>matchMedia('(any-pointer: coarse), (max-width: 700px), (max-width: 1024px) and (max-height: 600px)').matches;
+const touchLayout=()=>matchMedia('(pointer: coarse)').matches;
 document.body.classList.toggle('touch-layout',touchLayout());
 const keyboardKeys=new Set<string>();
 let renderer:T.WebGLRenderer;
@@ -38,11 +39,15 @@ const scene=new T.Scene();scene.background=new T.Color(0x050b13);
 const camera=new T.PerspectiveCamera(53,innerWidth/innerHeight,.15,18000);
 const expedition=new Expedition();
 const flight=expedition.flight;
-let active=false,paused=false,drag=false,uiTime=0,noticeTimer=0,lastControlState='',vehicleCameraYaw=0,vehicleCameraPitch=.12,equippedWeapon:WeaponKind|null=null;
+let active=false,paused=false,aiming=false,weaponAmmo=0,uiTime=0,noticeTimer=0,lastControlState='',vehicleCameraYaw=0,vehicleCameraPitch=.12,equippedWeapon:WeaponKind|null=null;
+const weaponInventory:WeaponKind[]=[];
+const weaponAmmoByKind:Record<WeaponKind,number>={pistol:0,rifle:0,knife:0};
 let orientationBlocked=needsPortrait(innerWidth,innerHeight,touchLayout());
-let fullscreenTransition=false;
+let fullscreenTransition=false,pointerLockPending=false,hadPointerLock=false;
+let pointerLockEscapePauseAt=0;
 let clockTime=0,last=performance.now();
 function notify(message:string){$('notice').textContent=message;$('notice').classList.add('visible');clearTimeout(noticeTimer);noticeTimer=window.setTimeout(()=>$('notice').classList.remove('visible'),4200);}
+function zoomCamera(delta:number){settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}}
 
 // A deterministic starfield keeps the composition consistent across restarts.
 let seed=817;
@@ -169,6 +174,8 @@ function setObjectOpacity(object:T.Object3D,opacity:number){const alpha=T.MathUt
 let fadedVehicle:T.Group|null=null;
 function setDrivenVehicleOpacity(model:T.Group|null,opacity:number){if(fadedVehicle&&fadedVehicle!==model)setObjectOpacity(fadedVehicle,1);if(model)setObjectOpacity(model,opacity);fadedVehicle=opacity<.999?model:null;}
 const astronaut=createAstronaut();scene.add(astronaut.root);astronaut.root.visible=false;
+function equipWeapon(kind:WeaponKind|null){if(equippedWeapon)weaponAmmoByKind[equippedWeapon]=weaponAmmo;equippedWeapon=kind;weaponAmmo=kind?weaponAmmoByKind[kind]:0;aiming=false;astronaut.setWeapon(kind);}
+function cycleWeapon(delta:number){if(!weaponInventory.length)return;const cycle:(WeaponKind|null)[]=[null,...weaponInventory];const current=cycle.indexOf(equippedWeapon);const next=(current+Math.sign(delta)+cycle.length)%cycle.length;equipWeapon(cycle[next]);}
 const contactShadow=new T.Mesh(new T.CircleGeometry(.6,24),new T.MeshBasicMaterial({color:0x07191d,transparent:true,opacity:.2,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));scene.add(contactShadow);contactShadow.visible=false;
 const motionGeometry=new T.BufferGeometry();const motionPositions=new Float32Array(80*6);motionGeometry.setAttribute('position',new T.BufferAttribute(motionPositions,3));
 const motionMaterial=new T.LineBasicMaterial({color:0xa1c8d4,transparent:true,opacity:0,depthWrite:false});const motion=new T.LineSegments(motionGeometry,motionMaterial);scene.add(motion);
@@ -185,22 +192,34 @@ $('sound').onclick=()=>{try{initAudio();soundEnabled=!soundEnabled;void audio?.r
 
 function useWeapon(){
   if(!active||paused||!expedition.onFoot||!equippedWeapon)return;
-  const direction=camera.getWorldDirection(new T.Vector3()),origin=camera.position.clone().addScaledVector(direction,.55),length=equippedWeapon==='knife'?2.2:45;
-  const geometry=new T.BufferGeometry().setFromPoints([origin,origin.clone().addScaledVector(direction,length)]);
+  if(equippedWeapon!=='knife'&&weaponAmmo<=0){notify('弹药耗尽');return;}
+  if(equippedWeapon!=='knife'){weaponAmmo--;weaponAmmoByKind[equippedWeapon]=weaponAmmo;}
+  const walker=expedition.walker,normal=walker.normal,length=equippedWeapon==='knife'?2.2:45;
+  const right=new T.Vector3().crossVectors(walker.forward,normal).normalize();
+  const origin=walker.position.clone().addScaledVector(normal,equippedWeapon==='knife' ? .85 : 1.32).addScaledVector(walker.forward,equippedWeapon==='knife' ? .4 : .32).addScaledVector(right,equippedWeapon==='knife' ? 0 : .28);
+  let endpoint:T.Vector3;
+  if(aiming&&(equippedWeapon==='pistol'||equippedWeapon==='rifle')){
+    endpoint=camera.position.clone().addScaledVector(camera.getWorldDirection(new T.Vector3()),length);
+  }else{
+    const spread=equippedWeapon==='knife'?0:.12;
+    const direction=walker.forward.clone().addScaledVector(right,(Math.random()-.5)*spread).addScaledVector(normal,(Math.random()-.5)*spread*.55).normalize();
+    endpoint=origin.clone().addScaledVector(direction,length);
+  }
+  const geometry=new T.BufferGeometry().setFromPoints([origin,endpoint]);
   const material=new T.LineBasicMaterial({color:equippedWeapon==='knife'?0xffd27a:0x9cecff,transparent:true,opacity:.9});
   const effect=new T.Line(geometry,material);scene.add(effect);window.setTimeout(()=>{scene.remove(effect);geometry.dispose();material.dispose();},equippedWeapon==='knife'?140:220);
 }
 function interact(){
   if(expedition.onFoot){
     const pickup=nearestWeaponPickup(expedition.walker.body,expedition.walker.position);
-    if(pickup){pickup.picked=true;pickup.root.visible=false;equippedWeapon=pickup.kind;notify(`已拾取${pickup.kind==='knife'?'近战刀':pickup.kind==='rifle'?'步枪':'手枪'} · 点击攻击键使用`);return;}
+    if(pickup){pickup.picked=true;pickup.root.visible=false;if(!weaponInventory.includes(pickup.kind))weaponInventory.push(pickup.kind);weaponAmmoByKind[pickup.kind]+=pickup.kind==='rifle'?30:pickup.kind==='pistol'?12:0;equipWeapon(pickup.kind);notify(`已拾取${pickup.kind==='knife'?'近战刀':pickup.kind==='rifle'?'步枪':'手枪'} · 点击攻击键使用`);return;}
     const parked=nearestParkedShip(expedition.walker.position);
     if(parked){flight.position.copy(parked.position);flight.rotation.copy(parked.rotation);flight.landBody=planets[0];flight.landNormal.copy(parked.normal);flight.mode='landed';parked.boarded=true;parked.root.visible=false;expedition.interact();return;}
   }
   expedition.interact();
 }
-const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw-=x*.004*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+y*.004*settings.viewSensitivity,-Math.PI/2+.005,Math.PI/2-.005);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact,takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();},useWeapon});
-function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
+const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw-=x*.004*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+y*.004*settings.viewSensitivity,-Math.PI/2+.005,Math.PI/2-.005);}},zoom:zoomCamera,interact,takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();},useWeapon});
+function release(){aiming=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
   const blocked=needsPortrait(innerWidth,innerHeight,touchLayout());
   if(blocked&&!orientationBlocked)release();
@@ -247,8 +266,8 @@ function menuView(){
   document.querySelector('.modal')?.setAttribute('aria-labelledby','modal-title');
 }
 function pause(){paused=true;release();menuView();document.body.classList.add('is-paused');$('pause-overlay').classList.remove('hidden');updateOrientation();$('resume').focus();}
-function lock(){if(touchLayout())return;try{const result=canvas.requestPointerLock();if(result)void result.catch(()=>{});}catch{/* Drag and keyboard controls remain available. */}}
-function resume(){paused=false;document.body.classList.remove('is-paused');$('pause-overlay').classList.add('hidden');updateOrientation();if(active){canvas.focus();lock();}else $('launch-game').focus();}
+function lock(){if(touchLayout()||!active||paused||document.pointerLockElement===canvas||pointerLockPending)return;pointerLockPending=true;const finish=()=>{pointerLockPending=false;clearTimeout(timeout);};const fail=()=>{finish();if(active&&!paused&&!touchLayout()){pause();notify('鼠标捕获失败，请点击继续游戏重试');}};const timeout=window.setTimeout(()=>{if(document.pointerLockElement!==canvas)fail();else finish();},1200);try{const result=canvas.requestPointerLock();if(result&&typeof result.then==='function')void result.then(finish,fail);else if(document.pointerLockElement===canvas)finish();}catch{fail();}}
+function resume(){pointerLockEscapePauseAt=0;paused=false;document.body.classList.remove('is-paused');$('pause-overlay').classList.add('hidden');updateOrientation();if(active){canvas.focus();lock();}else $('launch-game').focus();}
 function showManual(platform:'desktop'|'mobile'){
   const isMobile=platform==='mobile';
   $('manual-desktop').classList.toggle('hidden',isMobile);$('manual-mobile').classList.toggle('hidden',!isMobile);
@@ -271,7 +290,7 @@ function setupSettings(){
   }
 }
 setupSettings();
-function start(){expedition.beginOnPlanet();for(const parked of parkedShips){parked.boarded=false;parked.root.visible=true;}lastControlState='';const walker=expedition.walker,normal=walker.normal,focus=walker.position.clone().addScaledVector(normal,1.25);camera.position.copy(focus).addScaledVector(walker.forward,-settings.cameraDistance*Math.cos(walker.pitch)).addScaledVector(normal,settings.cameraDistance*Math.sin(walker.pitch));cameraLook.copy(focus);worldUp.copy(normal);active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();lock();}
+function start(){expedition.beginOnPlanet();equippedWeapon=null;weaponAmmo=0;weaponInventory.length=0;weaponAmmoByKind.pistol=0;weaponAmmoByKind.rifle=0;weaponAmmoByKind.knife=0;astronaut.setWeapon(null);aiming=false;for(const parked of parkedShips){parked.boarded=false;parked.root.visible=true;}lastControlState='';const walker=expedition.walker,normal=walker.normal,focus=walker.position.clone().addScaledVector(normal,1.25);camera.position.copy(focus).addScaledVector(walker.forward,-settings.cameraDistance*Math.cos(walker.pitch)).addScaledVector(normal,settings.cameraDistance*Math.sin(walker.pitch));cameraLook.copy(focus);worldUp.copy(normal);active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();canvas.focus();lock();}
 $('resume').onclick=resume;
 $('pause-button').onclick=pause;$('pause-shortcut').onclick=pause;
 $('show-instructions').onclick=()=>{
@@ -294,11 +313,13 @@ $('return-menu').onclick=()=>{
   if(isFullscreen()){try{if(document.exitFullscreen)void document.exitFullscreen();else void fullscreenDocument.webkitExitFullscreen?.();}catch{/* Browser fullscreen controls remain available. */}}
   updateOrientation();
 };
-canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
-addEventListener('mouseup',()=>drag=false);
-addEventListener('mousedown',e=>{if(e.button===0&&expedition.onFoot&&equippedWeapon)useWeapon();});
-addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){const dx=T.MathUtils.clamp(e.movementX,-80,80),dy=T.MathUtils.clamp(e.movementY,-80,80);if(expedition.inVehicle){vehicleCameraYaw-=dx*.0024*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+dy*.0024*settings.viewSensitivity,-Math.PI/2+.005,Math.PI/2-.005);}else{flight.mouseX+=dx;flight.mouseY+=dy;}}});
-document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement){drag=false;flight.mouseX=0;flight.mouseY=0;}});
+canvas.addEventListener('wheel',e=>{if(!active||paused||touchLayout())return;e.preventDefault();if(keyboardKeys.has('KeyV'))zoomCamera(e.deltaY*.012);else cycleWeapon(e.deltaY);},{passive:false});
+addEventListener('mouseup',e=>{if(e.button===2)aiming=false;});
+addEventListener('mousedown',e=>{if(e.button===0&&expedition.onFoot&&equippedWeapon)useWeapon();else if(e.button===2&&active&&!paused&&expedition.onFoot&&(equippedWeapon==='pistol'||equippedWeapon==='rifle'))aiming=true;});
+canvas.addEventListener('contextmenu',e=>{if(active&&expedition.onFoot)e.preventDefault();});
+addEventListener('mousemove',e=>{if(active&&!paused&&document.pointerLockElement===canvas){const dx=T.MathUtils.clamp(e.movementX,-80,80),dy=T.MathUtils.clamp(e.movementY,-80,80);if(expedition.inVehicle){vehicleCameraYaw-=dx*.0024*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+dy*.0024*settings.viewSensitivity,-Math.PI/2+.005,Math.PI/2-.005);}else{flight.mouseX+=dx;flight.mouseY+=dy;}}});
+document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement===canvas){hadPointerLock=true;pointerLockPending=false;return;}flight.mouseX=0;flight.mouseY=0;const wasLocked=hadPointerLock;hadPointerLock=false;if(wasLocked&&active&&!paused&&!touchLayout()){pointerLockEscapePauseAt=performance.now();pause();}});
+document.addEventListener('pointerlockerror',()=>{pointerLockPending=false;if(active&&!paused&&!touchLayout()){pause();notify('鼠标捕获失败，请点击继续游戏重试');}});
 addEventListener('keydown',e=>{
   if(orientationBlocked&&!paused&&e.code==='Tab'){
     if(e.shiftKey&&document.activeElement===$('rotate-fullscreen')){e.preventDefault();$('rotate-menu').focus();}
@@ -306,7 +327,7 @@ addEventListener('keydown',e=>{
     return;
   }
   if(paused){
-    if(e.code==='Escape'&&!e.repeat){e.preventDefault();if(!$('instructions-view').classList.contains('hidden')){menuView();$('show-instructions').focus();}else if(!$('settings-view').classList.contains('hidden')){menuView();$('show-settings').focus();}else resume();}
+    if(e.code==='Escape'&&!e.repeat){e.preventDefault();if(performance.now()-pointerLockEscapePauseAt<400){pointerLockEscapePauseAt=0;return;}if(!$('instructions-view').classList.contains('hidden')){menuView();$('show-instructions').focus();}else if(!$('settings-view').classList.contains('hidden')){menuView();$('show-settings').focus();}else resume();}
     if(e.code==='Tab'){
       const visible=Array.from(document.querySelectorAll<HTMLElement>('.modal button, .modal input')).filter(el=>el.getClientRects().length>0);
       const first=visible[0],last=visible[visible.length-1];
@@ -314,7 +335,7 @@ addEventListener('keydown',e=>{
     }return;
   }
   if((e.code==='Space'&&expedition.onFoot||['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code))&&active)e.preventDefault();
-  if(e.code==='Escape'&&!e.repeat){pause();return;}
+  if(e.code==='Escape'&&!e.repeat){e.preventDefault();pause();return;}
   if(!active||paused||orientationBlocked||e.repeat)return;
   if(e.code==='KeyF'){interact();return;}
   if(e.code==='KeyR'){expedition.takeoff();return;}
@@ -341,12 +362,20 @@ function frame(now:number){
   }}
   const onFoot=expedition.onFoot,inVehicle=expedition.inVehicle,walker=expedition.walker,groundVehicle=expedition.vehicle;
   const controlState=onFoot?'foot':inVehicle?'vehicle':'ship';
-  if(lastControlState!==controlState){keyboardKeys.clear();mobile.reset();flight.keys.clear();if(controlState==='vehicle'){vehicleCameraYaw=0;vehicleCameraPitch=.12;}flight.mouseX=0;flight.mouseY=0;lastControlState=controlState;}
+  if(lastControlState!==controlState){aiming=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();if(controlState==='vehicle'){vehicleCameraYaw=0;vehicleCameraPitch=.12;}flight.mouseX=0;flight.mouseY=0;lastControlState=controlState;}
   const local=onFoot?{...nearest(walker.position),altitude:walker.altitude}:inVehicle?{body:groundVehicle.body,normal:groundVehicle.normal,altitude:groundVehicle.position.distanceTo(groundVehicle.body.center)-groundRadius(groundVehicle.body,groundVehicle.normal)}:flight.local;
   const nearbyWeapon=onFoot?nearestWeaponPickup(walker.body,walker.position):null;
   const nearbyShip=onFoot?nearestParkedShip(walker.position):null;
   document.body.classList.toggle('on-foot',onFoot);
   document.body.classList.toggle('in-vehicle',inVehicle);
+  if(onFoot&&aiming&&(equippedWeapon==='pistol'||equippedWeapon==='rifle'))walker.facing.lerp(walker.forward,1-Math.exp(-dt*16)).projectOnPlane(walker.normal).normalize();
+  document.body.classList.toggle('weapon-carried',onFoot&&equippedWeapon!==null);
+  document.body.classList.toggle('weapon-equipped',onFoot&&equippedWeapon!==null&&aiming);
+  document.body.classList.toggle('weapon-aiming',aiming&&onFoot);
+  const weaponName=equippedWeapon==='rifle'?'步枪':equippedWeapon==='pistol'?'手枪':equippedWeapon==='knife'?'近战刀':'空手';
+  const ammoText=equippedWeapon==='knife'?'∞':equippedWeapon?String(weaponAmmo):'—';
+  if($('weapon-name').textContent!==weaponName)$('weapon-name').textContent=weaponName;
+  if($('weapon-ammo').textContent!==ammoText)$('weapon-ammo').textContent=ammoText;
   document.body.classList.toggle('ship-grounded',active&&!onFoot&&!inVehicle&&(flight.mode==='landed'||flight.mode==='takeoff'));
   astronaut.root.visible=onFoot;astronaut.animate(walker);
   contactShadow.visible=onFoot;
@@ -373,9 +402,16 @@ function frame(now:number){
   const cameraUp=onFoot?walker.normal:inVehicle?groundVehicle.normal:active?new T.Vector3(0,1,0).applyQuaternion(flight.rotation):worldUp;
   if(onFoot){
     const focus=walker.position.clone().addScaledVector(cameraUp,1.25);
-    const footCameraDistance=settings.cameraDistance;
-    desiredLook.copy(focus);
-    desiredCamera.copy(focus).addScaledVector(walker.forward,-footCameraDistance*Math.cos(walker.pitch)).addScaledVector(cameraUp,footCameraDistance*Math.sin(walker.pitch));
+    const footCameraDistance=settings.cameraDistance*(aiming ? .42 : 1);
+    if(aiming&&(equippedWeapon==='pistol'||equippedWeapon==='rifle')){
+      const aimDirection=walker.forward.clone().multiplyScalar(Math.cos(walker.pitch)).addScaledVector(cameraUp,-Math.sin(walker.pitch)).normalize();
+      const shoulderRight=new T.Vector3().crossVectors(walker.forward,cameraUp).normalize();
+      desiredCamera.copy(focus).addScaledVector(walker.forward,-footCameraDistance*Math.cos(walker.pitch)).addScaledVector(cameraUp,footCameraDistance*Math.sin(walker.pitch)).addScaledVector(shoulderRight,.82);
+      desiredLook.copy(desiredCamera).addScaledVector(aimDirection,100);
+    }else{
+      desiredLook.copy(focus);
+      desiredCamera.copy(focus).addScaledVector(walker.forward,-footCameraDistance*Math.cos(walker.pitch)).addScaledVector(cameraUp,footCameraDistance*Math.sin(walker.pitch));
+    }
   }else if(inVehicle){
     const focus=groundVehicle.position.clone().addScaledVector(cameraUp,1.35);
     const vehicleCameraDistance=settings.cameraDistance*.72;
@@ -397,8 +433,10 @@ function frame(now:number){
   const stableUp=cameraUpSource.clone().addScaledVector(viewDirection,-cameraUpSource.dot(viewDirection));
   if(stableUp.lengthSq()<.001)stableUp.copy(onFoot?walker.forward:inVehicle?groundVehicle.forward:new T.Vector3(0,1,0)).addScaledVector(viewDirection,-(onFoot?walker.forward:inVehicle?groundVehicle.forward:new T.Vector3(0,1,0)).dot(viewDirection));
   camera.up.copy(stableUp.normalize());camera.lookAt(cameraLook);
-  const fadeDistance=camera.position.distanceTo(cameraLook)/(inVehicle ? .72 : 1);
-  const nearCameraOpacity=.18+.82*T.MathUtils.smoothstep(fadeDistance,12,21);
+  const fadeFocus=onFoot?walker.position.clone().addScaledVector(walker.normal,1.25):cameraLook;
+  const fadeScale=onFoot&&aiming ? .42 : inVehicle ? .72 : 1;
+  const fadeDistance=camera.position.distanceTo(fadeFocus)/fadeScale;
+  const nearCameraOpacity=.18+.82*T.MathUtils.smoothstep(fadeDistance,11,16.5);
   astronaut.setOpacity(onFoot?nearCameraOpacity:1);
   const drivenVehicle=inVehicle?vehicleModels[expedition.vehicles.indexOf(groundVehicle)]??null:null;
   setDrivenVehicleOpacity(drivenVehicle,inVehicle?nearCameraOpacity:1);

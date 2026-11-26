@@ -6,7 +6,7 @@ const launcher=document.getElementById('launcher')!;
 const overlay=document.getElementById('rotate-overlay')!;
 let loading=false;
 let game:typeof import('./main')|undefined;
-const touchLayout=()=>matchMedia('(any-pointer: coarse), (max-width: 700px), (max-width: 1024px) and (max-height: 600px)').matches;
+const touchLayout=()=>matchMedia('(pointer: coarse)').matches;
 const isFullscreen=()=>Boolean(document.fullscreenElement);
 
 function updateLauncherOrientation(){
