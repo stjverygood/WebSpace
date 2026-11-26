@@ -149,6 +149,21 @@ function buildShip(){
 }
 const {ship,engines}=buildShip();scene.add(ship);
 const shipCameraTarget=new T.Object3D();ship.add(shipCameraTarget);
+const parkedShips:Array<{root:T.Group;position:T.Vector3;normal:T.Vector3;rotation:T.Quaternion;boarded:boolean}>=[];
+{
+  const body=planets[0],base=body.center.clone().negate().normalize(),side=new T.Vector3().crossVectors(base,new T.Vector3(0,1,0)).normalize(),other=new T.Vector3().crossVectors(base,side).normalize();
+  for(let i=0;i<10;i++){
+    let normal:T.Vector3;
+    if(i<6){const theta=.1+Math.random()*.2,phi=i*Math.PI/3+Math.random()*.25;normal=base.clone().multiplyScalar(Math.cos(theta)).addScaledVector(side,Math.sin(theta)*Math.cos(phi)).addScaledVector(other,Math.sin(theta)*Math.sin(phi)).normalize();}
+    else{const y=Math.random()*2-1,a=Math.random()*Math.PI*2;normal=new T.Vector3(Math.sqrt(1-y*y)*Math.cos(a),y,Math.sqrt(1-y*y)*Math.sin(a));}
+    const forward=new T.Vector3(-normal.z,0,normal.x).normalize();
+    const rotation=new T.Quaternion().setFromRotationMatrix(new T.Matrix4().lookAt(new T.Vector3(),forward,normal));
+    const position=body.center.clone().addScaledVector(normal,groundRadius(body,normal)+2.8);
+    const {ship:root,engines:parkedEngines}=buildShip();root.scale.setScalar(.8);root.position.copy(position);root.quaternion.copy(rotation);for(const engine of parkedEngines)engine.visible=false;scene.add(root);
+    parkedShips.push({root,position,normal,rotation,boarded:false});
+  }
+}
+function nearestParkedShip(position:T.Vector3,range=9){return parkedShips.filter(item=>!item.boarded).sort((a,b)=>a.position.distanceToSquared(position)-b.position.distanceToSquared(position)).find(item=>item.position.distanceTo(position)<range)??null;}
 const vehicleModels=expedition.vehicles.map(state=>{const model=buildGroundVehicle();model.visible=false;scene.add(model);return model;});
 const astronaut=createAstronaut();scene.add(astronaut.root);astronaut.root.visible=false;
 const contactShadow=new T.Mesh(new T.CircleGeometry(.6,24),new T.MeshBasicMaterial({color:0x07191d,transparent:true,opacity:.2,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));scene.add(contactShadow);contactShadow.visible=false;
@@ -172,8 +187,16 @@ function useWeapon(){
   const material=new T.LineBasicMaterial({color:equippedWeapon==='knife'?0xffd27a:0x9cecff,transparent:true,opacity:.9});
   const effect=new T.Line(geometry,material);scene.add(effect);window.setTimeout(()=>{scene.remove(effect);geometry.dispose();material.dispose();},equippedWeapon==='knife'?140:220);
 }
-function interact(){if(expedition.onFoot){const pickup=nearestWeaponPickup(expedition.walker.body,expedition.walker.position);if(pickup){pickup.picked=true;pickup.root.visible=false;equippedWeapon=pickup.kind;notify(`已拾取${pickup.kind==='knife'?'近战刀':pickup.kind==='rifle'?'步枪':'手枪'} · 点击攻击键使用`);return;}}expedition.interact();}
-const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw-=x*.004*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+y*.004*settings.viewSensitivity,-1.2,.72);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact,takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();},useWeapon});
+function interact(){
+  if(expedition.onFoot){
+    const pickup=nearestWeaponPickup(expedition.walker.body,expedition.walker.position);
+    if(pickup){pickup.picked=true;pickup.root.visible=false;equippedWeapon=pickup.kind;notify(`已拾取${pickup.kind==='knife'?'近战刀':pickup.kind==='rifle'?'步枪':'手枪'} · 点击攻击键使用`);return;}
+    const parked=nearestParkedShip(expedition.walker.position);
+    if(parked){flight.position.copy(parked.position);flight.rotation.copy(parked.rotation);flight.landBody=planets[0];flight.landNormal.copy(parked.normal);flight.mode='landed';parked.boarded=true;parked.root.visible=false;expedition.interact();return;}
+  }
+  expedition.interact();
+}
+const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw-=x*.004*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+y*.004*settings.viewSensitivity,-Math.PI/2+.005,.72);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact,takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();},useWeapon});
 function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
   const blocked=needsPortrait(innerWidth,innerHeight,touchLayout());
@@ -245,7 +268,7 @@ function setupSettings(){
   }
 }
 setupSettings();
-function start(){expedition.beginOnPlanet();lastControlState='';camera.position.copy(expedition.walker.position).addScaledVector(expedition.walker.forward,-settings.cameraDistance*.9).addScaledVector(expedition.walker.normal,settings.cameraDistance*.38);cameraLook.copy(expedition.walker.position).addScaledVector(expedition.walker.normal,1.25);worldUp.copy(expedition.walker.normal);active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();lock();}
+function start(){expedition.beginOnPlanet();for(const parked of parkedShips){parked.boarded=false;parked.root.visible=true;}lastControlState='';camera.position.copy(expedition.walker.position).addScaledVector(expedition.walker.forward,-settings.cameraDistance*.9).addScaledVector(expedition.walker.normal,settings.cameraDistance*.38);cameraLook.copy(expedition.walker.position).addScaledVector(expedition.walker.normal,1.25);worldUp.copy(expedition.walker.normal);active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();lock();}
 $('resume').onclick=resume;
 $('pause-button').onclick=pause;$('pause-shortcut').onclick=pause;
 $('show-instructions').onclick=()=>{
@@ -271,7 +294,7 @@ $('return-menu').onclick=()=>{
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
 addEventListener('mouseup',()=>drag=false);
 addEventListener('mousedown',e=>{if(e.button===0&&expedition.onFoot&&equippedWeapon)useWeapon();});
-addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){const dx=T.MathUtils.clamp(e.movementX,-80,80),dy=T.MathUtils.clamp(e.movementY,-80,80);if(expedition.inVehicle){vehicleCameraYaw-=dx*.0024*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+dy*.0024*settings.viewSensitivity,-1.2,.72);}else{flight.mouseX+=dx;flight.mouseY+=dy;}}});
+addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){const dx=T.MathUtils.clamp(e.movementX,-80,80),dy=T.MathUtils.clamp(e.movementY,-80,80);if(expedition.inVehicle){vehicleCameraYaw-=dx*.0024*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+dy*.0024*settings.viewSensitivity,-Math.PI/2+.005,.72);}else{flight.mouseX+=dx;flight.mouseY+=dy;}}});
 document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement){drag=false;flight.mouseX=0;flight.mouseY=0;}});
 addEventListener('keydown',e=>{
   if(orientationBlocked&&!paused&&e.code==='Tab'){
@@ -318,6 +341,7 @@ function frame(now:number){
   if(lastControlState!==controlState){keyboardKeys.clear();mobile.reset();flight.keys.clear();if(controlState==='vehicle'){vehicleCameraYaw=0;vehicleCameraPitch=.12;}flight.mouseX=0;flight.mouseY=0;lastControlState=controlState;}
   const local=onFoot?{...nearest(walker.position),altitude:walker.altitude}:inVehicle?{body:groundVehicle.body,normal:groundVehicle.normal,altitude:groundVehicle.position.distanceTo(groundVehicle.body.center)-groundRadius(groundVehicle.body,groundVehicle.normal)}:flight.local;
   const nearbyWeapon=onFoot?nearestWeaponPickup(walker.body,walker.position):null;
+  const nearbyShip=onFoot?nearestParkedShip(walker.position):null;
   document.body.classList.toggle('on-foot',onFoot);
   document.body.classList.toggle('in-vehicle',inVehicle);
   document.body.classList.toggle('ship-grounded',active&&!onFoot&&!inVehicle&&(flight.mode==='landed'||flight.mode==='takeoff'));
@@ -345,14 +369,17 @@ function frame(now:number){
   const desiredCamera=cameraOffset.applyQuaternion(flight.rotation).add(active?desiredLook:ship.position);
   const cameraUp=onFoot?walker.normal:inVehicle?groundVehicle.normal:active?new T.Vector3(0,1,0).applyQuaternion(flight.rotation):worldUp;
   if(onFoot){
-    desiredLook.copy(walker.position).addScaledVector(cameraUp,1.25);
+    const focus=walker.position.clone().addScaledVector(cameraUp,1.25);
     const footCameraDistance=settings.cameraDistance;
-    desiredCamera.copy(desiredLook).addScaledVector(walker.forward,-footCameraDistance*Math.cos(walker.pitch)).addScaledVector(cameraUp,footCameraDistance*Math.sin(walker.pitch));
+    desiredCamera.copy(focus).addScaledVector(walker.forward,-footCameraDistance*Math.cos(.25)).addScaledVector(cameraUp,footCameraDistance*Math.sin(.25));
+    desiredLook.copy(desiredCamera).addScaledVector(walker.forward,Math.cos(walker.pitch)).addScaledVector(cameraUp,-Math.sin(walker.pitch));
   }else if(inVehicle){
-    desiredLook.copy(groundVehicle.position).addScaledVector(cameraUp,1.35);
+    const focus=groundVehicle.position.clone().addScaledVector(cameraUp,1.35);
     const vehicleCameraDistance=settings.cameraDistance*.72;
-    const vehicleCameraOffset=groundVehicle.forward.clone().multiplyScalar(-vehicleCameraDistance*Math.cos(vehicleCameraPitch)).addScaledVector(cameraUp,vehicleCameraDistance*Math.sin(vehicleCameraPitch)).applyAxisAngle(cameraUp,vehicleCameraYaw);
-    desiredCamera.copy(desiredLook).add(vehicleCameraOffset);
+    const vehicleForward=groundVehicle.forward.clone().applyAxisAngle(cameraUp,vehicleCameraYaw);
+    const vehicleCameraOffset=vehicleForward.clone().multiplyScalar(-vehicleCameraDistance*Math.cos(.12)).addScaledVector(cameraUp,vehicleCameraDistance*Math.sin(.12));
+    desiredCamera.copy(focus).add(vehicleCameraOffset);
+    desiredLook.copy(desiredCamera).addScaledVector(vehicleForward,Math.cos(vehicleCameraPitch)).addScaledVector(cameraUp,-Math.sin(vehicleCameraPitch));
   }
   cameraPosition.copy(desiredCamera);
   // A chase camera must remain above terrain even when the player flies towards it.
@@ -363,7 +390,11 @@ function frame(now:number){
   if(!paused&&!orientationBlocked){camera.position.lerp(cameraPosition,1-Math.exp(-dt*positionFollow));if(onFoot||inVehicle){cameraLook.lerp(desiredLook,1-Math.exp(-dt*lookFollow));worldUp.lerp(cameraUp,1-Math.exp(-dt*12));}else{cameraLook.copy(desiredLook);worldUp.copy(cameraUp);}}
   // Clamp the interpolated camera too, so entering a hillside never clips through it.
   if(onFoot||inVehicle){const body=onFoot?walker.body:groundVehicle.body;const radial=camera.position.clone().sub(body.center);const direction=radial.clone().normalize();const safe=groundRadius(body,direction)+.65;if(radial.length()<safe)camera.position.copy(body.center).addScaledVector(direction,safe);}
-  camera.up.copy(worldUp).normalize();camera.lookAt(cameraLook);
+  const viewDirection=cameraLook.clone().sub(camera.position).normalize();
+  const cameraUpSource=onFoot||inVehicle?cameraUp:worldUp;
+  const stableUp=cameraUpSource.clone().addScaledVector(viewDirection,-cameraUpSource.dot(viewDirection));
+  if(stableUp.lengthSq()<.001)stableUp.copy(onFoot?walker.forward:inVehicle?groundVehicle.forward:new T.Vector3(0,1,0)).addScaledVector(viewDirection,-(onFoot?walker.forward:inVehicle?groundVehicle.forward:new T.Vector3(0,1,0)).dot(viewDirection));
+  camera.up.copy(stableUp.normalize());camera.lookAt(cameraLook);
   const portrait=touchLayout()&&camera.aspect<1;
   const fov=onFoot||inVehicle?(portrait?64:58):(portrait?68:53)+(active?Math.min(flight.speed/35,7):0);camera.fov=T.MathUtils.lerp(camera.fov,fov,.04);camera.updateProjectionMatrix();
   stars.position.copy(camera.position);
@@ -385,16 +416,16 @@ function frame(now:number){
     const currentPlanetName=$('current-planet-name');
     if(currentPlanetName.textContent!==local.body.name)currentPlanetName.textContent=local.body.name;
     $('boost-key').textContent=onFoot?'SHIFT':'W / S';$('boost-label').textContent=onFoot?'奔跑':inVehicle?'驾驶':'推进';$('space-label').textContent='跳跃';$('space-control').classList.toggle('hidden',!onFoot);$('interact-label').textContent=onFoot?'上车 / 登船':inVehicle?'下车':'下船';
-    const canLand=active&&(onFoot?expedition.canBoard||expedition.canBoardVehicle:inVehicle||local.altitude<90&&flight.speed<20||flight.mode==='landed');
+    const canLand=active&&(onFoot?expedition.canBoard||expedition.canBoardVehicle||Boolean(nearbyShip):inVehicle||local.altitude<90&&flight.speed<20||flight.mode==='landed');
     $('landing-prompt').classList.toggle('hidden',!canLand&&!nearbyWeapon||!onFoot&&(flight.mode==='landing'||flight.mode==='takeoff'));
     $('landing-text').textContent=onFoot?nearbyWeapon?'拾取武器':expedition.canBoardVehicle?'上车':'登上飞船':inVehicle?'下车':flight.mode==='landed'?'离开飞船 · 地表探索':'降落并下船';
     const touchAction=$('touch-action');
-    const touchActionLabel=onFoot?expedition.canBoardVehicle?'上车':'登船':inVehicle?'下车':'下船';
+    const touchActionLabel=onFoot?nearbyWeapon?'拾取武器':expedition.canBoardVehicle?'上车':'登船':inVehicle?'下车':'下船';
     const touchActionIcon=onFoot?expedition.canBoardVehicle?'vehicle':'ship':inVehicle?'exit':'land';
     if(touchAction.dataset.icon!==touchActionIcon){touchAction.dataset.icon=touchActionIcon;touchAction.innerHTML=INTERACTION_ICONS[touchActionIcon];}
     if(touchAction.getAttribute('aria-label')!==touchActionLabel)touchAction.setAttribute('aria-label',touchActionLabel);
-    $('touch-action').classList.toggle('hidden',!inVehicle&&(onFoot?!(expedition.canBoard||expedition.canBoardVehicle)&&!nearbyWeapon:!canLand));
-    $<HTMLButtonElement>('touch-action').disabled=onFoot?!(expedition.canBoard||expedition.canBoardVehicle)&&!nearbyWeapon:inVehicle?false:!canLand||flight.mode==='landing'||flight.mode==='takeoff';
+    $('touch-action').classList.toggle('hidden',!inVehicle&&(onFoot?!(expedition.canBoard||expedition.canBoardVehicle)&&!nearbyWeapon&&!nearbyShip:!canLand));
+    $<HTMLButtonElement>('touch-action').disabled=onFoot?!(expedition.canBoard||expedition.canBoardVehicle)&&!nearbyWeapon&&!nearbyShip:inVehicle?false:!canLand||flight.mode==='landing'||flight.mode==='takeoff';
     $('touch-weapon').classList.toggle('hidden',!onFoot||!equippedWeapon);
     $('touch-launch').classList.toggle('hidden',onFoot||inVehicle||flight.mode!=='landed');
     $('takeoff-prompt').classList.toggle('hidden',!active||onFoot||inVehicle||flight.mode!=='landed');

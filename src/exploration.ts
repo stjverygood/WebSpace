@@ -89,7 +89,7 @@ export class Walker {
     this.forward.normalize();this.facing.copy(this.forward);this.velocity.set(0,0,0);
     this.verticalSpeed=0;this.pitch=.25;this.grounded=true;this.jumpBuffer=0;this.coyoteTime=.1;this.travel=0;
   }
-  look(x:number,y:number){this.forward.applyAxisAngle(this.normal,-x*.0032).normalize();this.pitch=T.MathUtils.clamp(this.pitch+y*.0032,-1.2,1.05);}
+  look(x:number,y:number){this.forward.applyAxisAngle(this.normal,-x*.0032).normalize();this.pitch=T.MathUtils.clamp(this.pitch+y*.0032,-Math.PI/2+.005,1.05);}
   jump(){this.jumpBuffer=.14;}
   update(dt:number,shipPosition?:T.Vector3,vehiclePosition?:T.Vector3){
     dt=Math.min(dt,.04);
@@ -142,7 +142,7 @@ export class Walker {
 export class Expedition {
   flight=new Flight();
   walker=new Walker(this.flight.keys);
-  vehicles=Array.from({length:12},()=>new GroundVehicle(planets[0]));
+  vehicles=Array.from({length:60},()=>new GroundVehicle(planets[0]));
   private mountedVehicle:GroundVehicle|null=null;
   onFoot=false;
   inVehicle=false;
@@ -165,13 +165,17 @@ export class Expedition {
     const towardOrigin=new T.Vector3().sub(body.center).normalize();
     const tangent=new T.Vector3().crossVectors(towardOrigin,UP).normalize();
     const playerNormal=surfaceNormal(body,towardOrigin,1);
-    const shipNormal=surfaceNormal(body,playerNormal.clone().applyAxisAngle(tangent,.78),6);
+    const shipNormal=surfaceNormal(body,playerNormal.clone().applyAxisAngle(tangent,.018),6);
     const playerPoint=body.center.clone().addScaledVector(playerNormal,groundRadius(body,playerNormal)+.04);
     const playerHeading=tangent.clone();
     this.walker.spawn(body,playerPoint,playerHeading);
     this.onFoot=true;
     const rnd=()=>Math.random();
-    for(const vehicle of this.vehicles){const y=rnd()*2-1,a=rnd()*Math.PI*2,normal=new T.Vector3(Math.sqrt(1-y*y)*Math.cos(a),y,Math.sqrt(1-y*y)*Math.sin(a));const heading=new T.Vector3(-Math.sin(a),0,Math.cos(a)).projectOnPlane(normal).normalize();vehicle.spawn(normal,heading);}
+    for(let i=0;i<this.vehicles.length;i++){
+      const vehicle=this.vehicles[i],y=rnd()*2-1,a=rnd()*Math.PI*2,normal=new T.Vector3(Math.sqrt(1-y*y)*Math.cos(a),y,Math.sqrt(1-y*y)*Math.sin(a));
+      if(i<16){const theta=i<4?.055+rnd()*.035:.09+rnd()*.32,phi=rnd()*Math.PI*2,base=playerNormal.clone(),side=new T.Vector3().crossVectors(base,UP).normalize(),other=new T.Vector3().crossVectors(base,side).normalize();normal.copy(base).multiplyScalar(Math.cos(theta)).addScaledVector(side,Math.sin(theta)*Math.cos(phi)).addScaledVector(other,Math.sin(theta)*Math.sin(phi)).normalize();}
+      const heading=new T.Vector3(-Math.sin(a),0,Math.cos(a)).projectOnPlane(normal).normalize();vehicle.spawn(normal,heading);
+    }
     this.flight.position.copy(body.center).addScaledVector(shipNormal,groundRadius(body,shipNormal)+2.8);
     this.flight.landBody=body;this.flight.landNormal.copy(shipNormal);this.flight.mode='landed';
     const shipHeading=playerPoint.clone().sub(this.flight.position).addScaledVector(shipNormal,-playerPoint.clone().sub(this.flight.position).dot(shipNormal)).normalize();

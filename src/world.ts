@@ -46,9 +46,10 @@ export function nearestWeaponPickup(planet:Planet,position:T.Vector3,range=4){
 function addWeaponPickups(p:Planet,planetRoot:T.Group){
   const rnd=()=>Math.random();
   const kinds:WeaponKind[]=[];
-  for(let i=0;i<24;i++)kinds.push(i%4===0?'knife':i%3===0?'rifle':'pistol');
+  for(let i=0;i<120;i++)kinds.push(i%4===0?'knife':i%3===0?'rifle':'pistol');
   kinds.forEach((kind,i)=>{
     const y=rnd()*2-1,a=rnd()*Math.PI*2,n=new T.Vector3(Math.sqrt(1-y*y)*Math.cos(a),y,Math.sqrt(1-y*y)*Math.sin(a));
+    if(i<48){const base=p.center.clone().negate().normalize(),tangent=new T.Vector3().crossVectors(base,UP).normalize(),bitangent=new T.Vector3().crossVectors(base,tangent).normalize(),theta=.015+rnd()*.22,phi=rnd()*Math.PI*2;n.copy(base).multiplyScalar(Math.cos(theta)).addScaledVector(tangent,Math.sin(theta)*Math.cos(phi)).addScaledVector(bitangent,Math.sin(theta)*Math.sin(phi)).normalize();}
     const root=new T.Group();root.position.copy(n).multiplyScalar(surfaceRadius(p,n)+.8);root.quaternion.setFromUnitVectors(UP,n);
     const dark=new T.MeshStandardMaterial({color:0x202a30,roughness:.55,metalness:.55,flatShading:true});
     const metal=new T.MeshStandardMaterial({color:kind==='knife'?0xc7d0cb:0x76878a,roughness:.35,metalness:.72,flatShading:true});
