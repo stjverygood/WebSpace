@@ -61,9 +61,6 @@ async function launch(){
   button.classList.add('is-loading');
   button.setAttribute('aria-live','polite');
   button.innerHTML='<span class="launch-loading-label">正在加载场景</span><span class="launch-progress" aria-hidden="true"><span></span></span>';
-  if(matchMedia('(any-pointer: coarse), (max-width: 700px), (max-width: 1024px) and (max-height: 600px)').matches){
-    try{void document.documentElement.requestFullscreen?.({navigationUI:'hide'}).catch(()=>{});}catch{/* Manual portrait play is still available. */}
-  }
   try{
     game=await import('./main');
     document.getElementById('game-root')!.hidden=false;
