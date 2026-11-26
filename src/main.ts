@@ -196,7 +196,7 @@ function interact(){
   }
   expedition.interact();
 }
-const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw-=x*.004*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+y*.004*settings.viewSensitivity,-Math.PI/2+.005,.72);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact,takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();},useWeapon});
+const mobile=new MobileControls({enabled:()=>active&&!paused&&!orientationBlocked,onFoot:()=>expedition.onFoot,inVehicle:()=>expedition.inVehicle,look:(x,y)=>{if(expedition.onFoot){flight.mouseX+=x*settings.viewSensitivity;flight.mouseY+=y*settings.viewSensitivity;}else if(expedition.inVehicle){vehicleCameraYaw-=x*.004*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+y*.004*settings.viewSensitivity,-Math.PI/2+.005,Math.PI/2-.005);}},zoom:(delta)=>{settings.cameraDistance=T.MathUtils.clamp(Math.round((settings.cameraDistance+delta)*2)/2,CAMERA_DISTANCE_MIN,CAMERA_DISTANCE_MAX);try{localStorage.setItem('astral-settings',JSON.stringify(settings));}catch{/* Camera zoom still applies until this page closes. */}},interact,takeoff:()=>expedition.takeoff(),jump:()=>{if(expedition.onFoot)expedition.walker.jump();},useWeapon});
 function release(){drag=false;keyboardKeys.clear();mobile.reset();flight.keys.clear();flight.mouseX=0;flight.mouseY=0;flight.joystickX=0;flight.joystickY=0;if(document.pointerLockElement)document.exitPointerLock();}
 function updateOrientation(){
   const blocked=needsPortrait(innerWidth,innerHeight,touchLayout());
@@ -294,7 +294,7 @@ $('return-menu').onclick=()=>{
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(active&&!paused){drag=true;if(!document.pointerLockElement)lock();}});
 addEventListener('mouseup',()=>drag=false);
 addEventListener('mousedown',e=>{if(e.button===0&&expedition.onFoot&&equippedWeapon)useWeapon();});
-addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){const dx=T.MathUtils.clamp(e.movementX,-80,80),dy=T.MathUtils.clamp(e.movementY,-80,80);if(expedition.inVehicle){vehicleCameraYaw-=dx*.0024*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+dy*.0024*settings.viewSensitivity,-Math.PI/2+.005,.72);}else{flight.mouseX+=dx;flight.mouseY+=dy;}}});
+addEventListener('mousemove',e=>{if(active&&!paused&&(document.pointerLockElement===canvas||drag)){const dx=T.MathUtils.clamp(e.movementX,-80,80),dy=T.MathUtils.clamp(e.movementY,-80,80);if(expedition.inVehicle){vehicleCameraYaw-=dx*.0024*settings.viewSensitivity;vehicleCameraPitch=T.MathUtils.clamp(vehicleCameraPitch+dy*.0024*settings.viewSensitivity,-Math.PI/2+.005,Math.PI/2-.005);}else{flight.mouseX+=dx;flight.mouseY+=dy;}}});
 document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement){drag=false;flight.mouseX=0;flight.mouseY=0;}});
 addEventListener('keydown',e=>{
   if(orientationBlocked&&!paused&&e.code==='Tab'){
@@ -371,15 +371,14 @@ function frame(now:number){
   if(onFoot){
     const focus=walker.position.clone().addScaledVector(cameraUp,1.25);
     const footCameraDistance=settings.cameraDistance;
-    desiredCamera.copy(focus).addScaledVector(walker.forward,-footCameraDistance*Math.cos(.25)).addScaledVector(cameraUp,footCameraDistance*Math.sin(.25));
-    desiredLook.copy(desiredCamera).addScaledVector(walker.forward,Math.cos(walker.pitch)).addScaledVector(cameraUp,-Math.sin(walker.pitch));
+    desiredLook.copy(focus);
+    desiredCamera.copy(focus).addScaledVector(walker.forward,-footCameraDistance*Math.cos(walker.pitch)).addScaledVector(cameraUp,footCameraDistance*Math.sin(walker.pitch));
   }else if(inVehicle){
     const focus=groundVehicle.position.clone().addScaledVector(cameraUp,1.35);
     const vehicleCameraDistance=settings.cameraDistance*.72;
     const vehicleForward=groundVehicle.forward.clone().applyAxisAngle(cameraUp,vehicleCameraYaw);
-    const vehicleCameraOffset=vehicleForward.clone().multiplyScalar(-vehicleCameraDistance*Math.cos(.12)).addScaledVector(cameraUp,vehicleCameraDistance*Math.sin(.12));
-    desiredCamera.copy(focus).add(vehicleCameraOffset);
-    desiredLook.copy(desiredCamera).addScaledVector(vehicleForward,Math.cos(vehicleCameraPitch)).addScaledVector(cameraUp,-Math.sin(vehicleCameraPitch));
+    desiredLook.copy(focus);
+    desiredCamera.copy(focus).addScaledVector(vehicleForward,-vehicleCameraDistance*Math.cos(vehicleCameraPitch)).addScaledVector(cameraUp,vehicleCameraDistance*Math.sin(vehicleCameraPitch));
   }
   cameraPosition.copy(desiredCamera);
   // A chase camera must remain above terrain even when the player flies towards it.
