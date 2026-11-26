@@ -7,9 +7,9 @@ export interface Planet {
   atmosphere: number; gravity: number; ring?: boolean;
 }
 export const planets: Planet[] = [
-  {name:'苍蓝星',code:'AURELIA · 04B',description:'海洋、山脉，以及尚未被命名的远方。',type:'海洋 / 山脉',center:new T.Vector3(350,-80,-1100),radius:300,seed:1.7,colors:[0x24555e,0x41818a,0x8aa99a,0xb7baa1,0xd7d0b3],gravity:9.8,atmosphere:0x72b8c9},
-  {name:'赤砂星',code:'EMBER · 09C',description:'风穿过赤色峡谷，时间在这里慢了下来。',type:'荒漠 / 峡谷',center:new T.Vector3(-1050,-310,-500),radius:210,seed:4.3,colors:[0x714442,0x995b4c,0xb97959,0xd79c72,0xe0c29c],gravity:3.7,atmosphere:0xdc9171},
-  {name:'环带星',code:'VESPER · 12A',description:'穿过冰尘构成的光环，抵达安静的灰色高地。',type:'岩原 / 冰尘环',center:new T.Vector3(-900,430,-2700),radius:440,seed:8.6,colors:[0x535c70,0x7a8191,0xa7a9ac,0xbfc1b7,0xe1dbc5],gravity:14.5,atmosphere:0xaab2de,ring:true},
+  {name:'蓝星',code:'BLUE · 04B',description:'海洋、山脉，以及尚未被命名的远方。',type:'海洋 / 山脉',center:new T.Vector3(350,-80,-1100),radius:300,seed:1.7,colors:[0x24555e,0x41818a,0x8aa99a,0xb7baa1,0xd7d0b3],gravity:9.8,atmosphere:0x72b8c9},
+  {name:'赤星',code:'SCARLET · 09C',description:'风穿过赤色峡谷，时间在这里慢了下来。',type:'荒漠 / 峡谷',center:new T.Vector3(-1050,-310,-500),radius:210,seed:4.3,colors:[0x714442,0x995b4c,0xb97959,0xd79c72,0xe0c29c],gravity:3.7,atmosphere:0xdc9171},
+  {name:'环星',code:'RING · 12A',description:'穿过冰尘构成的光环，抵达安静的灰色高地。',type:'岩原 / 冰尘环',center:new T.Vector3(-900,430,-2700),radius:440,seed:8.6,colors:[0x535c70,0x7a8191,0xa7a9ac,0xbfc1b7,0xe1dbc5],gravity:14.5,atmosphere:0xaab2de,ring:true},
 ];
 
 // The same continuous radial field drives the rendered vertices and collisions.
