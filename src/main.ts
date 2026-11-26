@@ -165,6 +165,9 @@ const parkedShips:Array<{root:T.Group;position:T.Vector3;normal:T.Vector3;rotati
 }
 function nearestParkedShip(position:T.Vector3,range=9){return parkedShips.filter(item=>!item.boarded).sort((a,b)=>a.position.distanceToSquared(position)-b.position.distanceToSquared(position)).find(item=>item.position.distanceTo(position)<range)??null;}
 const vehicleModels=expedition.vehicles.map(state=>{const model=buildGroundVehicle();model.visible=false;scene.add(model);return model;});
+function setObjectOpacity(object:T.Object3D,opacity:number){const alpha=T.MathUtils.clamp(opacity,0,1);object.traverse(child=>{if(!(child instanceof T.Mesh))return;const materials=Array.isArray(child.material)?child.material:[child.material];for(const material of materials){material.opacity=alpha;material.transparent=alpha<.999;material.depthWrite=alpha>.995;}});}
+let fadedVehicle:T.Group|null=null;
+function setDrivenVehicleOpacity(model:T.Group|null,opacity:number){if(fadedVehicle&&fadedVehicle!==model)setObjectOpacity(fadedVehicle,1);if(model)setObjectOpacity(model,opacity);fadedVehicle=opacity<.999?model:null;}
 const astronaut=createAstronaut();scene.add(astronaut.root);astronaut.root.visible=false;
 const contactShadow=new T.Mesh(new T.CircleGeometry(.6,24),new T.MeshBasicMaterial({color:0x07191d,transparent:true,opacity:.2,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));scene.add(contactShadow);contactShadow.visible=false;
 const motionGeometry=new T.BufferGeometry();const motionPositions=new Float32Array(80*6);motionGeometry.setAttribute('position',new T.BufferAttribute(motionPositions,3));
@@ -268,7 +271,7 @@ function setupSettings(){
   }
 }
 setupSettings();
-function start(){expedition.beginOnPlanet();for(const parked of parkedShips){parked.boarded=false;parked.root.visible=true;}lastControlState='';camera.position.copy(expedition.walker.position).addScaledVector(expedition.walker.forward,-settings.cameraDistance*.9).addScaledVector(expedition.walker.normal,settings.cameraDistance*.38);cameraLook.copy(expedition.walker.position).addScaledVector(expedition.walker.normal,1.25);worldUp.copy(expedition.walker.normal);active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();lock();}
+function start(){expedition.beginOnPlanet();for(const parked of parkedShips){parked.boarded=false;parked.root.visible=true;}lastControlState='';const walker=expedition.walker,normal=walker.normal,focus=walker.position.clone().addScaledVector(normal,1.25);camera.position.copy(focus).addScaledVector(walker.forward,-settings.cameraDistance*Math.cos(walker.pitch)).addScaledVector(normal,settings.cameraDistance*Math.sin(walker.pitch));cameraLook.copy(focus);worldUp.copy(normal);active=true;paused=false;document.body.classList.remove('is-paused');document.body.classList.add('active-flight');$('pause-overlay').classList.add('hidden');$('reticle').classList.remove('hidden');updateOrientation();lock();}
 $('resume').onclick=resume;
 $('pause-button').onclick=pause;$('pause-shortcut').onclick=pause;
 $('show-instructions').onclick=()=>{
@@ -394,6 +397,10 @@ function frame(now:number){
   const stableUp=cameraUpSource.clone().addScaledVector(viewDirection,-cameraUpSource.dot(viewDirection));
   if(stableUp.lengthSq()<.001)stableUp.copy(onFoot?walker.forward:inVehicle?groundVehicle.forward:new T.Vector3(0,1,0)).addScaledVector(viewDirection,-(onFoot?walker.forward:inVehicle?groundVehicle.forward:new T.Vector3(0,1,0)).dot(viewDirection));
   camera.up.copy(stableUp.normalize());camera.lookAt(cameraLook);
+  const nearCameraOpacity=.18+.82*T.MathUtils.smoothstep(camera.position.distanceTo(cameraLook),2.8,5.5);
+  astronaut.setOpacity(onFoot?nearCameraOpacity:1);
+  const drivenVehicle=inVehicle?vehicleModels[expedition.vehicles.indexOf(groundVehicle)]??null:null;
+  setDrivenVehicleOpacity(drivenVehicle,inVehicle?nearCameraOpacity:1);
   const portrait=touchLayout()&&camera.aspect<1;
   const fov=onFoot||inVehicle?(portrait?64:58):(portrait?68:53)+(active?Math.min(flight.speed/35,7):0);camera.fov=T.MathUtils.lerp(camera.fov,fov,.04);camera.updateProjectionMatrix();
   stars.position.copy(camera.position);

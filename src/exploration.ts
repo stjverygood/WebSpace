@@ -234,6 +234,7 @@ export function createAstronaut(){
   const dark=new T.MeshStandardMaterial({color:0x253a43,roughness:.6,flatShading:true});
   const visor=new T.MeshStandardMaterial({color:0x133e4b,metalness:.75,roughness:.2});
   const trim=new T.MeshStandardMaterial({color:0x89bdac,roughness:.6});
+  const materials=[suit,dark,visor,trim];
   function box(parent:T.Group,material:T.Material,size:number[],position:number[]){const m=new T.Mesh(new T.BoxGeometry(...size as [number,number,number]),material);m.position.fromArray(position);parent.add(m);return m;}
   box(root,suit,[.6,.68,.36],[0,1.13,0]);box(root,dark,[.49,.18,.34],[0,.75,0]);
   box(root,dark,[.43,.52,.24],[0,1.15,.28]);box(root,trim,[.21,.18,.06],[.15,1.24,-.2]);
@@ -244,7 +245,7 @@ export function createAstronaut(){
     const arm=new T.Group();arm.position.set(side*.42,1.38,0);box(arm,suit,[.23,.48,.25],[0,-.22,0]);box(arm,dark,[.22,.15,.24],[0,-.52,0]);root.add(arm);arms.push(arm);
     const leg=new T.Group();leg.position.set(side*.18,.74,0);box(leg,suit,[.25,.5,.28],[0,-.24,0]);box(leg,dark,[.28,.2,.4],[0,-.62,-.05]);root.add(leg);legs.push(leg);
   }
-  return {root,animate(walker:Walker){
+  return {root,setOpacity(opacity:number){const alpha=T.MathUtils.clamp(opacity,0,1);for(const material of materials){material.opacity=alpha;material.transparent=alpha<.999;material.depthWrite=alpha>.995;}},animate(walker:Walker){
     const gait=Math.sin(walker.travel*2.1)*Math.min(walker.speed/4.2,1)*.65;
     for(let i=0;i<2;i++){legs[i].rotation.x=walker.grounded?gait*(i===0?1:-1):-.28;arms[i].rotation.x=walker.grounded?-gait*(i===0?1:-1):-.5;arms[i].rotation.z=walker.grounded?(i===0?.08:-.08):(i===0?.35:-.35);}
     root.position.copy(walker.position);root.quaternion.copy(walker.rotation);
