@@ -397,7 +397,8 @@ function frame(now:number){
   const stableUp=cameraUpSource.clone().addScaledVector(viewDirection,-cameraUpSource.dot(viewDirection));
   if(stableUp.lengthSq()<.001)stableUp.copy(onFoot?walker.forward:inVehicle?groundVehicle.forward:new T.Vector3(0,1,0)).addScaledVector(viewDirection,-(onFoot?walker.forward:inVehicle?groundVehicle.forward:new T.Vector3(0,1,0)).dot(viewDirection));
   camera.up.copy(stableUp.normalize());camera.lookAt(cameraLook);
-  const nearCameraOpacity=.18+.82*T.MathUtils.smoothstep(camera.position.distanceTo(cameraLook),2.8,5.5);
+  const fadeDistance=camera.position.distanceTo(cameraLook)/(inVehicle ? .72 : 1);
+  const nearCameraOpacity=.18+.82*T.MathUtils.smoothstep(fadeDistance,12,21);
   astronaut.setOpacity(onFoot?nearCameraOpacity:1);
   const drivenVehicle=inVehicle?vehicleModels[expedition.vehicles.indexOf(groundVehicle)]??null:null;
   setDrivenVehicleOpacity(drivenVehicle,inVehicle?nearCameraOpacity:1);
