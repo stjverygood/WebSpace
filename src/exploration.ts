@@ -147,8 +147,6 @@ export class Expedition {
   onFoot=false;
   inVehicle=false;
   pendingExit=false;
-  onNotice=(message:string)=>{void message;};
-  constructor(){this.flight.onNotice=message=>this.onNotice(message);}
   get vehicle(){
     if(this.mountedVehicle)return this.mountedVehicle;
     const body=this.onFoot?this.walker.body:this.flight.local.body;
@@ -194,7 +192,6 @@ export class Expedition {
     }
     this.walker.spawn(body,spot,new T.Vector3(0,0,-1).applyQuaternion(f.rotation));
     this.onFoot=true;this.pendingExit=false;f.keys.clear();f.mouseX=0;f.mouseY=0;
-    this.onNotice(`已下船 · ${body.name}重力 ${body.gravity.toFixed(1)} m/s² · 空格跳跃`);
   }
   interact(){
     if(this.inVehicle){
@@ -202,23 +199,21 @@ export class Expedition {
       const right=new T.Vector3().crossVectors(vehicle.forward,n).normalize();
       const exitPoint=vehicle.position.clone().addScaledVector(right,5.6);
       this.walker.spawn(vehicle.body,exitPoint,vehicle.forward);this.inVehicle=false;this.onFoot=true;this.mountedVehicle=null;
-      this.flight.keys.clear();this.onNotice('已下车');return;
+      this.flight.keys.clear();return;
     }
     if(this.onFoot){
-      if(this.canBoardVehicle){this.mountedVehicle=this.vehicle;this.inVehicle=true;this.onFoot=false;this.flight.keys.clear();this.onNotice('已上车 · W/S 前进后退 · A/D 转向 · F 下车');return;}
-      if(!this.canBoard){this.onNotice(this.shipDistance>=9?'请靠近飞船至 9 m 内登船':'请落地后再登船');return;}
+      if(this.canBoardVehicle){this.mountedVehicle=this.vehicle;this.inVehicle=true;this.onFoot=false;this.flight.keys.clear();return;}
+      if(!this.canBoard)return;
       this.onFoot=false;this.flight.keys.clear();this.flight.mouseX=0;this.flight.mouseY=0;
-      this.onNotice('已登船 · R 起飞 · F 再次下船');return;
+      return;
     }
     if(this.flight.mode==='landed'){this.disembark();return;}
-    if(this.flight.mode==='landing'){this.pendingExit=true;this.onNotice('正在降落 · 落稳后自动下船');return;}
-    if(this.flight.mode==='takeoff'){this.onNotice('起飞中，暂时无法下船');return;}
-    if(this.flight.local.altitude>90){this.onNotice('靠近地表至 90 m 内，按 F 降落并下船');return;}
-    if(this.flight.speed>20){this.onNotice('请按住 S 反向推进减速至 20 m/s 以下再下船');return;}
-    this.pendingExit=true;this.flight.interact();this.onNotice('正在降落 · 落稳后自动下船');
+    if(this.flight.mode==='landing'){this.pendingExit=true;return;}
+    if(this.flight.mode==='takeoff'||this.flight.local.altitude>90||this.flight.speed>20)return;
+    this.pendingExit=true;this.flight.interact();
   }
   takeoff(){
-    if(this.onFoot||this.inVehicle){this.onNotice('请先离开车辆或登上飞船');return;}
+    if(this.onFoot||this.inVehicle)return;
     if(this.flight.mode==='landed')this.flight.interact();
   }
   update(dt:number){
@@ -234,7 +229,6 @@ export function createAstronaut(){
   const dark=new T.MeshStandardMaterial({color:0x253a43,roughness:.6,flatShading:true});
   const visor=new T.MeshStandardMaterial({color:0x133e4b,metalness:.75,roughness:.2});
   const trim=new T.MeshStandardMaterial({color:0x89bdac,roughness:.6});
-  const materials=[suit,dark,visor,trim];
   function box(parent:T.Group,material:T.Material,size:number[],position:number[]){const m=new T.Mesh(new T.BoxGeometry(...size as [number,number,number]),material);m.position.fromArray(position);parent.add(m);return m;}
   box(root,suit,[.6,.68,.36],[0,1.13,0]);box(root,dark,[.49,.18,.34],[0,.75,0]);
   box(root,dark,[.43,.52,.24],[0,1.15,.28]);box(root,trim,[.21,.18,.06],[.15,1.24,-.2]);
@@ -248,7 +242,6 @@ export function createAstronaut(){
   const weaponDark=new T.MeshStandardMaterial({color:0x202c32,metalness:.72,roughness:.38,flatShading:true});
   const weaponMetal=new T.MeshStandardMaterial({color:0x81918e,metalness:.82,roughness:.28,flatShading:true});
   const weaponGrip=new T.MeshStandardMaterial({color:0x394940,metalness:.2,roughness:.8,flatShading:true});
-  materials.push(weaponDark,weaponMetal,weaponGrip);
   const handWeapons=new T.Group();handWeapons.position.set(0,-.52,-.12);arms[1].add(handWeapons);
   const models=new Map<WeaponKind,T.Group>();
   const weaponBox=(parent:T.Group,material:T.Material,size:[number,number,number],position:[number,number,number])=>{const mesh=new T.Mesh(new T.BoxGeometry(...size),material);mesh.position.set(...position);parent.add(mesh);return mesh;};
@@ -263,7 +256,7 @@ export function createAstronaut(){
     model.visible=false;handWeapons.add(model);models.set(kind,model);
   };
   makeWeapon('pistol');makeWeapon('rifle');makeWeapon('knife');
-  return {root,setWeapon(kind:WeaponKind|null){for(const [weapon,model] of models)model.visible=weapon===kind;},setOpacity(opacity:number){const alpha=T.MathUtils.clamp(opacity,0,1);for(const material of materials){material.opacity=alpha;material.transparent=alpha<.999;material.depthWrite=alpha>.995;}},animate(walker:Walker){
+  return {root,setWeapon(kind:WeaponKind|null){for(const [weapon,model] of models)model.visible=weapon===kind;},animate(walker:Walker){
     const gait=Math.sin(walker.travel*2.1)*Math.min(walker.speed/4.2,1)*.65;
     for(let i=0;i<2;i++){legs[i].rotation.x=walker.grounded?gait*(i===0?1:-1):-.28;arms[i].rotation.x=walker.grounded?-gait*(i===0?1:-1):-.5;arms[i].rotation.z=walker.grounded?(i===0?.08:-.08):(i===0?.35:-.35);}
     root.position.copy(walker.position);root.quaternion.copy(walker.rotation);

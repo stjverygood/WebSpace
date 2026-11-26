@@ -16,21 +16,19 @@ export class Flight {
   mouseX=0;mouseY=0;
   joystickX=0;joystickY=0;
   bankAngle=0;
-  onNotice=(message:string)=>{void message;};
   get speed(){return this.velocity.length();}
   get local(){return nearest(this.position);}
   reset(){this.position.set(0,30,50);this.rotation.identity();this.velocity.set(0,0,0);this.mode='manual';this.keys.clear();this.mouseX=0;this.mouseY=0;this.joystickX=0;this.joystickY=0;this.bankAngle=0;}
   interact(){
     if(this.mode==='landed'){
-      this.mode='takeoff';this.elapsed=0;this.onNotice('起飞程序启动');return;
+      this.mode='takeoff';this.elapsed=0;return;
     }
     if(this.mode==='landing'||this.mode==='takeoff')return;
     const local=this.local;
-    if(local.altitude>90){this.onNotice('请靠近地表至 90 m 以内再降落');return;}
-    if(this.speed>20){this.onNotice('速度过高 · 按住 S 反向推进减速至 20 m/s 以下');return;}
+    if(local.altitude>90||this.speed>20)return;
     this.landBody=local.body;this.landNormal.copy(local.normal);
     this.destination.copy(local.body.center).addScaledVector(local.normal,surfaceRadius(local.body,local.normal)+2.8);
-    this.bankAngle=0;this.mode='landing';this.onNotice('辅助降落启动 · 正在稳定姿态');
+    this.bankAngle=0;this.mode='landing';
   }
   tangentAttitude(normal:T.Vector3){
     const forward=new T.Vector3(0,0,-1).applyQuaternion(this.rotation);
@@ -50,13 +48,13 @@ export class Flight {
       const desired=delta.clone().multiplyScalar(.85).clampLength(0,9);
       this.velocity.lerp(desired,1-Math.exp(-dt*3));
       this.position.addScaledVector(this.velocity,dt);
-      if(delta.length()<.18&&this.speed<.5){this.position.copy(this.destination);this.mode='landed';this.velocity.set(0,0,0);this.onNotice(`已抵达${this.landBody.name} · F 下船探索 / R 起飞`);}
+      if(delta.length()<.18&&this.speed<.5){this.position.copy(this.destination);this.mode='landed';this.velocity.set(0,0,0);}
       return;
     }
     if(this.mode==='takeoff'){
       this.elapsed+=dt;this.velocity.lerp(this.landNormal.clone().multiplyScalar(13),1-Math.exp(-dt*2));
       this.position.addScaledVector(this.velocity,dt);
-      if(this.elapsed>3.3){this.mode='manual';this.onNotice('起飞完成 · 已恢复手动驾驶');}return;
+      if(this.elapsed>3.3){this.mode='manual';}return;
     }
     const oldBank=this.bankAngle;
     this.bankAngle+=(key('RollLeft')-key('RollRight'))*dt*1.25;

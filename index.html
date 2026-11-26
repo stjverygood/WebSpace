@@ -18,11 +18,8 @@
       <button class="icon-button pause-control touch-control-button" id="pause-button" aria-label="暂停游戏"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button>
     </header>
     <div id="reticle" class="reticle hidden"><div></div><span></span></div>
-    <div id="notice" class="notice" role="status"></div>
-    <button id="landing-prompt" class="landing-prompt hidden"><span class="key">F</span><span id="landing-text">降落并下船</span></button>
-    <button id="takeoff-prompt" class="takeoff-prompt hidden"><span class="key">R</span> 启动起飞</button>
     <footer class="hud">
-      <div class="bottom-controls"><span><kbd id="boost-key">W / S</kbd> <span id="boost-label">推进</span></span><span id="space-control" class="hidden"><kbd>SPACE</kbd> <span id="space-label">跳跃</span></span><span><kbd>F</kbd> <span id="interact-label">下船</span></span><button id="pause-shortcut"><kbd>ESC</kbd> 暂停</button></div>
+      <div class="bottom-controls"><span><kbd id="boost-key">W / S</kbd> <span id="boost-label">推进</span></span><span id="space-control" class="hidden"><kbd>SPACE</kbd> <span id="space-label">跳跃</span></span><button id="pause-shortcut"><kbd>ESC</kbd> 暂停</button></div>
     </footer>
     <div id="pause-overlay" class="modal-backdrop hidden">
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
@@ -47,9 +44,9 @@
           <div class="eyebrow">FLIGHT & FIELD MANUAL</div><h2 id="instructions-title">操作说明</h2>
           <div class="manual-tabs" role="tablist" aria-label="操作平台"><button id="manual-desktop-tab" role="tab" aria-selected="true" aria-controls="manual-desktop">电脑按键</button><button id="manual-mobile-tab" role="tab" aria-selected="false" aria-controls="manual-mobile">手机触屏</button></div>
           <div id="manual-desktop" role="tabpanel" aria-labelledby="manual-desktop-tab">
-            <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>W / S</dt><dd>持续前进加速 / 反向推进减速</dd></div><div><dt>鼠标 / 方向键</dt><dd>调整飞船朝向</dd></div><div><dt>F</dt><dd>靠近地表后降落并下船；靠近飞船登船或下船</dd></div><div><dt>R</dt><dd>停泊时起飞</dd></div></dl>
-            <h3>地表探索</h3><dl class="manual-list"><div><dt>WASD</dt><dd>前后左右行走</dd></div><div><dt>鼠标 / 方向键</dt><dd>转动第三人称视角</dd></div><div><dt>左键 / 右键</dt><dd>攻击 / 瞄准</dd></div><div><dt>滚轮</dt><dd>切换已拾取的手持装备</dd></div><div><dt>V + 滚轮</dt><dd>调节镜头远近</dd></div><div><dt>Shift + 移动</dt><dd>奔跑</dd></div><div><dt>空格</dt><dd>跳跃，重力影响跳高与滞空</dd></div><div><dt>F</dt><dd>靠近车辆或飞船后上车 / 登船</dd></div><div><dt>车内 W / S · A / D</dt><dd>前进 / 后退 · 左右转向；F 下车</dd></div><div><dt>Esc / 右上暂停</dt><dd>暂停 / 继续；说明中返回菜单</dd></div></dl>
-            <p class="manual-tip">点击游戏画面锁定鼠标；也可按住鼠标左键拖动转向。驾驶飞船自行寻找星球，附近星球资料会显示在右侧。</p>
+            <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>W / S</dt><dd>W 起飞或前进加速；S 反向推进减速</dd></div><div><dt>鼠标 / 方向键</dt><dd>调整飞船朝向</dd></div><div><dt>E</dt><dd>使用目标旁的交互提示降落、登船或下船</dd></div></dl>
+            <h3>地表探索</h3><dl class="manual-list"><div><dt>WASD</dt><dd>前后左右行走</dd></div><div><dt>鼠标 / 方向键</dt><dd>转动第三人称视角</dd></div><div><dt>滚轮</dt><dd>调整所有驾驶状态共用的镜头远近</dd></div><div><dt>Q</dt><dd>切换已拾取的手持装备</dd></div><div><dt>左键 / 右键</dt><dd>攻击 / 瞄准</dd></div><div><dt>E</dt><dd>使用目标旁的交互提示上车、登船或拾取</dd></div><div><dt>Shift + 移动</dt><dd>奔跑</dd></div><div><dt>空格</dt><dd>跳跃，重力影响跳高与滞空</dd></div><div><dt>车内 W / S · A / D</dt><dd>前进 / 后退 · 左右转向；E 下车</dd></div><div><dt>Esc</dt><dd>暂停；说明中返回菜单</dd></div></dl>
+            <p class="manual-tip">按 Esc 暂停；点击继续游戏后自动捕获鼠标。滚轮调整镜头远近，Q 切换装备。靠近可交互目标时，提示会显示在目标旁。</p>
           </div>
           <div id="manual-mobile" role="tabpanel" aria-labelledby="manual-mobile-tab" class="hidden">
             <h3>驾驶飞船</h3><dl class="manual-list"><div><dt>左侧动态摇杆</dt><dd>左右转向机身，上下控制俯仰</dd></div><div><dt>「左倾 / 右倾」</dt><dd>按住调整飞船侧倾，松开保持</dd></div><div><dt>右侧「↓ / ↑」</dt><dd>按住反向推进 / 持续前进加速</dd></div><div><dt>镜头</dt><dd>随飞船朝向移动，不可手动转动</dd></div><div><dt>双指捏合</dt><dd>调整相机远近</dd></div><div><dt>「下船 / 起飞」</dt><dd>降落并下船 / 登船后起飞</dd></div></dl>
