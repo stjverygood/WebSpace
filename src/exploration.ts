@@ -142,35 +142,36 @@ export class Walker {
 export class Expedition {
   flight=new Flight();
   walker=new Walker(this.flight.keys);
-  vehicles=planets.map(p=>new GroundVehicle(p));
+  vehicles=Array.from({length:12},()=>new GroundVehicle(planets[0]));
+  private mountedVehicle:GroundVehicle|null=null;
   onFoot=false;
   inVehicle=false;
   pendingExit=false;
   onNotice=(message:string)=>{void message;};
   constructor(){this.flight.onNotice=message=>this.onNotice(message);}
-  get vehicle(){return this.vehicles.find(v=>v.body===(this.onFoot||this.inVehicle?this.walker.body:this.flight.local.body))??this.vehicles[0];}
+  get vehicle(){
+    if(this.mountedVehicle)return this.mountedVehicle;
+    const body=this.onFoot?this.walker.body:this.flight.local.body;
+    const reference=this.onFoot?this.walker.position:this.flight.position;
+    return this.vehicles.filter(v=>v.body===body).sort((a,b)=>a.position.distanceToSquared(reference)-b.position.distanceToSquared(reference))[0]??this.vehicles[0];
+  }
   get vehicleDistance(){return this.walker.position.distanceTo(this.vehicle.position);}
   get shipDistance(){return (this.inVehicle?this.vehicle.position:this.walker.position).distanceTo(this.flight.position);}
   get canBoard(){return this.onFoot&&this.shipDistance<9&&this.walker.grounded;}
   get canBoardVehicle(){return this.onFoot&&this.vehicleDistance<5&&this.walker.grounded;}
   reset(){this.onFoot=false;this.inVehicle=false;this.pendingExit=false;this.flight.reset();}
   beginOnPlanet(){
-    this.reset();const body=planets[0];
+    this.reset();this.mountedVehicle=null;const body=planets[0];
     const towardOrigin=new T.Vector3().sub(body.center).normalize();
     const tangent=new T.Vector3().crossVectors(towardOrigin,UP).normalize();
     const playerNormal=surfaceNormal(body,towardOrigin,1);
-    const roverNormal=surfaceNormal(body,playerNormal.clone().applyAxisAngle(tangent,.12),2.8);
     const shipNormal=surfaceNormal(body,playerNormal.clone().applyAxisAngle(tangent,.78),6);
     const playerPoint=body.center.clone().addScaledVector(playerNormal,groundRadius(body,playerNormal)+.04);
-    const roverPoint=body.center.clone().addScaledVector(roverNormal,groundRadius(body,roverNormal)+.04);
-    const roverHeading=roverPoint.clone().sub(playerPoint).addScaledVector(playerNormal,-roverPoint.clone().sub(playerPoint).dot(playerNormal)).normalize();
-    this.walker.spawn(body,playerPoint,roverHeading);
+    const playerHeading=tangent.clone();
+    this.walker.spawn(body,playerPoint,playerHeading);
     this.onFoot=true;
-    for(const vehicle of this.vehicles){
-      const preferred=vehicle.body===body?roverNormal:new T.Vector3().sub(vehicle.body.center).normalize();
-      const direction=vehicle.body===body?roverHeading:new T.Vector3().crossVectors(preferred,UP).normalize();
-      vehicle.spawn(preferred,direction);
-    }
+    const rnd=()=>Math.random();
+    for(const vehicle of this.vehicles){const y=rnd()*2-1,a=rnd()*Math.PI*2,normal=new T.Vector3(Math.sqrt(1-y*y)*Math.cos(a),y,Math.sqrt(1-y*y)*Math.sin(a));const heading=new T.Vector3(-Math.sin(a),0,Math.cos(a)).projectOnPlane(normal).normalize();vehicle.spawn(normal,heading);}
     this.flight.position.copy(body.center).addScaledVector(shipNormal,groundRadius(body,shipNormal)+2.8);
     this.flight.landBody=body;this.flight.landNormal.copy(shipNormal);this.flight.mode='landed';
     const shipHeading=playerPoint.clone().sub(this.flight.position).addScaledVector(shipNormal,-playerPoint.clone().sub(this.flight.position).dot(shipNormal)).normalize();
@@ -196,11 +197,11 @@ export class Expedition {
       const vehicle=this.vehicle,n=vehicle.normal;
       const right=new T.Vector3().crossVectors(vehicle.forward,n).normalize();
       const exitPoint=vehicle.position.clone().addScaledVector(right,5.6);
-      this.walker.spawn(vehicle.body,exitPoint,vehicle.forward);this.inVehicle=false;this.onFoot=true;
+      this.walker.spawn(vehicle.body,exitPoint,vehicle.forward);this.inVehicle=false;this.onFoot=true;this.mountedVehicle=null;
       this.flight.keys.clear();this.onNotice('已下车');return;
     }
     if(this.onFoot){
-      if(this.canBoardVehicle){this.inVehicle=true;this.onFoot=false;this.flight.keys.clear();this.onNotice('已上车 · W/S 前进后退 · A/D 转向 · F 下车');return;}
+      if(this.canBoardVehicle){this.mountedVehicle=this.vehicle;this.inVehicle=true;this.onFoot=false;this.flight.keys.clear();this.onNotice('已上车 · W/S 前进后退 · A/D 转向 · F 下车');return;}
       if(!this.canBoard){this.onNotice(this.shipDistance>=9?'请靠近飞船至 9 m 内登船':'请落地后再登船');return;}
       this.onFoot=false;this.flight.keys.clear();this.flight.mouseX=0;this.flight.mouseY=0;
       this.onNotice('已登船 · R 起飞 · F 再次下船');return;

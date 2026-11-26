@@ -14,6 +14,7 @@ export const planets: Planet[] = [
 
 // The same continuous radial field drives the rendered vertices and collisions.
 export function terrain(p: Planet, n: T.Vector3): number {
+  if(p===planets[0])return 0;
   const s=p.seed;
   const broad=Math.sin(n.x*4.1+s)*Math.cos(n.y*4.8-s)+Math.sin(n.z*5.3+n.x*2+s)*.55;
   const detail=Math.sin(n.x*18+n.z*7+s)*Math.cos(n.y*17+n.z*4)*.19;
@@ -21,6 +22,7 @@ export function terrain(p: Planet, n: T.Vector3): number {
   return (broad+detail+ridges-.12)*p.radius*.045;
 }
 export function surfaceRadius(p: Planet,n: T.Vector3): number {
+  if(p===planets[0])return p.radius;
   return p.radius+Math.max(p.seed===1.7?0:-p.radius*.02, terrain(p,n));
 }
 export function nearest(position: T.Vector3) {
@@ -41,11 +43,12 @@ export function nearestWeaponPickup(planet:Planet,position:T.Vector3,range=4){
   for(const item of weaponPickups){if(item.planet!==planet||item.picked)continue;item.root.updateWorldMatrix(true,false);const point=item.root.getWorldPosition(new T.Vector3()),d=point.distanceTo(position);if(d<distance){best=item;distance=d;}}
   return best;
 }
-function addWeaponPickups(p:Planet,planetRoot:T.Group,index:number){
-  let seed=Math.floor(p.seed*1000)+index*7919;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
-  const kinds:WeaponKind[]=['pistol','knife','rifle','pistol'];
+function addWeaponPickups(p:Planet,planetRoot:T.Group){
+  const rnd=()=>Math.random();
+  const kinds:WeaponKind[]=[];
+  for(let i=0;i<24;i++)kinds.push(i%4===0?'knife':i%3===0?'rifle':'pistol');
   kinds.forEach((kind,i)=>{
-    const y=rnd()*1.5-.75,a=rnd()*Math.PI*2,n=new T.Vector3(Math.sqrt(1-y*y)*Math.cos(a),y,Math.sqrt(1-y*y)*Math.sin(a));
+    const y=rnd()*2-1,a=rnd()*Math.PI*2,n=new T.Vector3(Math.sqrt(1-y*y)*Math.cos(a),y,Math.sqrt(1-y*y)*Math.sin(a));
     const root=new T.Group();root.position.copy(n).multiplyScalar(surfaceRadius(p,n)+.8);root.quaternion.setFromUnitVectors(UP,n);
     const dark=new T.MeshStandardMaterial({color:0x202a30,roughness:.55,metalness:.55,flatShading:true});
     const metal=new T.MeshStandardMaterial({color:kind==='knife'?0xc7d0cb:0x76878a,roughness:.35,metalness:.72,flatShading:true});
@@ -195,24 +198,6 @@ export function createPlanet(p:Planet):T.Group {
   group.add(ground);
   groundMeshes.set(p,new T.Mesh(geo,new T.MeshBasicMaterial()));
   const colliders:SurfaceObstacle[]=[];obstacles.set(p,colliders);
-  // Surface outcrops provide a human-scale reference during low flight.
-  const outcrops=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),new T.MeshStandardMaterial({color:p.colors[3],roughness:.95,flatShading:true}),420);
-  const transform=new T.Object3D();let count=0;
-  for(let i=0;i<1100&&count<420;i++){
-    const y=1-2*(i+.5)/1100,angle=i*2.399963+p.seed;
-    const direction=new T.Vector3(Math.sqrt(1-y*y)*Math.cos(angle),y,Math.sqrt(1-y*y)*Math.sin(angle));
-    if(p.seed===1.7&&terrain(p,direction)<2)continue;
-    const size=.8+(Math.sin(i*74.31)+1)*1.7;
-    transform.position.copy(direction).multiplyScalar(surfaceRadius(p,direction)+size*.2);
-    transform.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),direction);
-    transform.rotateY(i*1.73);transform.scale.set(size*.8,size*(.6+(i%4)*.4),size);
-    transform.updateMatrix();outcrops.setMatrixAt(count++,transform.matrix);
-    const height=size*(.6+(i%4)*.4);
-    // Small, partly buried decorative outcrops should not abruptly stop a vehicle.
-    colliders.push({position:transform.position.clone().add(p.center),radius:size*.8,height,vehicleBlocking:size>3.8&&height>3.4});
-  }
-  outcrops.count=count;group.add(outcrops);
-  addSettlement(p,group,colliders);
   if(p.ring){
     const rings=new T.Group();rings.rotation.set(.35,.1,-.3);
     for(let i=0;i<5;i++){
@@ -220,7 +205,7 @@ export function createPlanet(p:Planet):T.Group {
       mesh.rotation.x=Math.PI/2;rings.add(mesh);
     }group.add(rings);
   }
-  addWeaponPickups(p,group,planets.indexOf(p));
+  if(p===planets[0])addWeaponPickups(p,group);
   return group;
 }
 

@@ -70,13 +70,6 @@ const sunlight=new T.DirectionalLight(0xffe2bb,3.3);sunlight.position.set(-2000,
 const fill=new T.DirectionalLight(0x78bed2,.7);fill.position.set(1200,200,100);scene.add(fill);
 for(const p of planets)scene.add(createPlanet(p));
 
-const sunPosition=new T.Vector3(-3200,1000,-5200);
-const sun=new T.Mesh(new T.SphereGeometry(64,24,16),new T.MeshBasicMaterial({color:0xffe2b0}));sun.position.copy(sunPosition);scene.add(sun);
-const glowCanvas=document.createElement('canvas');glowCanvas.width=128;glowCanvas.height=128;
-const ctx=glowCanvas.getContext('2d')!;const gradient=ctx.createRadialGradient(64,64,0,64,64,64);
-gradient.addColorStop(0,'rgba(255,234,194,.65)');gradient.addColorStop(.08,'rgba(255,216,164,.32)');gradient.addColorStop(.3,'rgba(255,190,132,.08)');gradient.addColorStop(1,'rgba(255,170,110,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
-const glow=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(glowCanvas),transparent:true,depthWrite:false,blending:T.AdditiveBlending}));glow.position.copy(sunPosition);glow.scale.set(1900,1900,1);scene.add(glow);
-
 // One instanced draw call for the entire asteroid field.
 const rocks=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),new T.MeshStandardMaterial({color:0x7b7972,roughness:1,flatShading:true}),190);
 const dummy=new T.Object3D();
@@ -338,7 +331,7 @@ function frame(now:number){
     contactShadow.scale.setScalar(1+Math.min(walker.altitude,6)*.08);
   }
   ship.position.copy(flight.position);ship.quaternion.copy(flight.rotation);
-  for(let i=0;i<vehicleModels.length;i++){const model=vehicleModels[i],state=expedition.vehicles[i];model.visible=active;model.position.copy(state.position);model.quaternion.copy(state.rotation);}
+  for(let i=0;i<vehicleModels.length;i++){const model=vehicleModels[i],state=expedition.vehicles[i];model.visible=active&&state.body===planets[0];model.position.copy(state.position);model.quaternion.copy(state.rotation);}
   if(!active){ship.position.y+=Math.sin(clockTime*.65)*.45;ship.rotateZ(Math.sin(clockTime*.3)*.025);}
   const boosting=flight.keys.has('KeyW')&&!onFoot&&!inVehicle;
   for(let i=0;i<engines.length;i++){const engine=engines[i];engine.scale.y=(flight.mode==='landed'?.05:boosting?2.4:.45+flight.speed/130)*(1+Math.sin(clockTime*35+i)*.07);engine.visible=flight.mode!=='landed';}
