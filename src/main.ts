@@ -161,7 +161,6 @@ const astronaut=createAstronaut();scene.add(astronaut.root);astronaut.root.visib
 const contactShadow=new T.Mesh(new T.CircleGeometry(.6,24),new T.MeshBasicMaterial({color:0x07191d,transparent:true,opacity:.2,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));scene.add(contactShadow);contactShadow.visible=false;
 const motionGeometry=new T.BufferGeometry();const motionPositions=new Float32Array(80*6);motionGeometry.setAttribute('position',new T.BufferAttribute(motionPositions,3));
 const motionMaterial=new T.LineBasicMaterial({color:0xa1c8d4,transparent:true,opacity:0,depthWrite:false});const motion=new T.LineSegments(motionGeometry,motionMaterial);scene.add(motion);
-const mist=new T.FogExp2(0x7d9c9e,0);scene.fog=mist;
 // Sound is synthesized locally, only after a user gesture, with a short fade.
 let audio:AudioContext|undefined,engineGain:GainNode|undefined,oscillator:OscillatorNode|undefined,soundEnabled=false;
 function initAudio(){
@@ -325,7 +324,6 @@ function frame(now:number){
   const controlState=onFoot?'foot':inVehicle?'vehicle':'ship';
   if(lastControlState!==controlState){keyboardKeys.clear();mobile.reset();flight.keys.clear();if(controlState==='vehicle'){vehicleCameraYaw=0;vehicleCameraPitch=.12;}flight.mouseX=0;flight.mouseY=0;lastControlState=controlState;}
   const local=onFoot?{...nearest(walker.position),altitude:walker.altitude}:inVehicle?{body:groundVehicle.body,normal:groundVehicle.normal,altitude:groundVehicle.position.distanceTo(groundVehicle.body.center)-groundRadius(groundVehicle.body,groundVehicle.normal)}:flight.local;
-  const near=T.MathUtils.clamp(1-local.altitude/110,0,1);
   const nearbyWeapon=onFoot?nearestWeaponPickup(walker.body,walker.position):null;
   document.body.classList.toggle('on-foot',onFoot);
   document.body.classList.toggle('in-vehicle',inVehicle);
@@ -376,9 +374,8 @@ function frame(now:number){
   const portrait=touchLayout()&&camera.aspect<1;
   const fov=onFoot||inVehicle?(portrait?64:58):(portrait?68:53)+(active?Math.min(flight.speed/35,7):0);camera.fov=T.MathUtils.lerp(camera.fov,fov,.04);camera.updateProjectionMatrix();
   stars.position.copy(camera.position);
-  mist.color.setHex(local.body.atmosphere);mist.density=near*near*.00085;
-  (scene.background as T.Color).set(0x050b13).lerp(new T.Color(local.body.atmosphere).multiplyScalar(.28),near*near*.8);
-  (stars.material as T.PointsMaterial).opacity=.85*(1-near*.85);
+  (scene.background as T.Color).set(0x050b13);
+  (stars.material as T.PointsMaterial).opacity=.85;
   motionMaterial.opacity=active&&!onFoot?T.MathUtils.clamp((flight.speed-90)/500,0,.22):0;
   if(motionMaterial.opacity>0&&!paused){
     for(let i=0;i<80;i++){

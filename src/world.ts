@@ -213,11 +213,6 @@ export function createPlanet(p:Planet):T.Group {
   }
   outcrops.count=count;group.add(outcrops);
   addSettlement(p,group,colliders);
-  const atmosphere=new T.Mesh(new T.SphereGeometry(p.radius*1.075,64,48),new T.ShaderMaterial({
-    uniforms:{tint:{value:new T.Color(p.atmosphere)}},transparent:true,depthWrite:false,side:T.BackSide,blending:T.AdditiveBlending,
-    vertexShader:`varying vec3 vNormal; varying vec3 vView; void main(){ vec4 view=modelViewMatrix*vec4(position,1.);vNormal=normalize(normalMatrix*normal);vView=normalize(-view.xyz);gl_Position=projectionMatrix*view; }`,
-    fragmentShader:`uniform vec3 tint; varying vec3 vNormal; varying vec3 vView; void main(){float rim=pow(1.-abs(dot(normalize(vNormal),normalize(vView))),3.5); gl_FragColor=vec4(tint,rim*.38);}`,
-  }));group.add(atmosphere);
   if(p.ring){
     const rings=new T.Group();rings.rotation.set(.35,.1,-.3);
     for(let i=0;i<5;i++){
